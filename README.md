@@ -39,9 +39,9 @@ Each model should be places in its own directory under `/models`. The build proc
 
 Model data will be compiled from `.3ds` (via `3dsconv`), `.s` or `.c` files. All `.tga` files will be converted to `.cry` (via `tga2cry`) and included in the binary.
 
-Models will be exposed in the case as `<directory name>data`. eg. to reference the model built from the "ship1" directory: `extern N3DObjdata ship1data;`
+Models converted from `.3ds` files will be exposed in the code with the symbol `<filename>data`. eg. to reference the model built from `ship1.3ds` use `extern N3DObjdata ship1data;`. Models built from `.s` or `.c` source will use the global symbols declared there.
 
-TODO: Multiple models from the same directory.
+A directory can contain multiple model files.
 
 ## Objects
 
