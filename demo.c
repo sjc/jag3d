@@ -113,7 +113,7 @@ MODEL models[] = {
 union olist buf1_olist[2] =
 {
 	{{OL_BITMAP,	/* type */
-	 20+(320-OBJWIDTH)/2, 20+(240-OBJHEIGHT),		/* x, y */
+	 14+(320-OBJWIDTH)/2, 20+(240-OBJHEIGHT),		/* x, y */
 	 0L,		/* link */
 	 DATA1,		/* data */
 	 OBJHEIGHT, OBJWIDTH*3/4, OBJWIDTH/4,		/* height, dwidth, iwidth */
@@ -127,7 +127,7 @@ union olist buf1_olist[2] =
 union olist buf2_olist[2] =
 {
 	{{OL_BITMAP,	/* type */
-	 20+(320-OBJWIDTH)/2, 20+(240-OBJHEIGHT),		/* x, y */
+	 14+(320-OBJWIDTH)/2, 20+(240-OBJHEIGHT),		/* x, y */
 	 0L,		/* link */
 	 DATA2,		/* data */
 	 OBJHEIGHT, OBJWIDTH*3/4, OBJWIDTH/4,		/* height, dwidth, iwidth */
