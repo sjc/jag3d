@@ -174,7 +174,7 @@ innerloop	.equr	return		; inner loop branch address
 	moveta	temp0,leftz
 	moveta	temp1,lefti
 	moveta	temp0,rightz
-	moveta	temp1,rightz
+	moveta	temp1,righti
 .if TEXTURES
 	load	(left),temp0			; temp0 = left->u
 	addqt	#4,left
