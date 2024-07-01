@@ -35,9 +35,6 @@
 ; POLYSIDES
 ; Maximum number of polygon sides supported
 ;
-; MAX_LIGHTS
-; Maximum number of lights in a scene
-;
 ; MINZ
 ; Minimum Z value not clipped (must be > 0)
 ;
@@ -54,7 +51,6 @@
 ;TEXTURES	=	0
 ;TEXSHADE	=	0
 ;POLYSIDES	=	4
-;MAX_LIGHTS	=	6
 ;MINZ		=	8
 ;PERSP_SHIFT	=	2
 
@@ -63,7 +59,6 @@
 ;PHRASEMODE	=	0
 ;TEXTURES	=	0
 ;POLYSIDES	=	3
-;MAX_LIGHTS	=	6
 ;MINZ		=	8
 ;PERSP_SHIFT	=	2
 
@@ -73,7 +68,6 @@
 ;TEXTURES	=	0
 ;TEXSHADE	=	0
 ;POLYSIDES	=	4
-;MAX_LIGHTS	=	6
 ;MINZ		=	8
 ;PERSP_SHIFT	=	2
 
@@ -83,7 +77,6 @@ PHRASEMODE	=	0
 TEXTURES	=	1
 TEXSHADE	=	0
 POLYSIDES	=	4
-MAX_LIGHTS	=	6
 MINZ		=	8
 PERSP_SHIFT	=	2
 
@@ -93,7 +86,6 @@ PERSP_SHIFT	=	2
 ;TEXTURES	=	1
 ;TEXSHADE	=	1
 ;POLYSIDES	=	4
-;MAX_LIGHTS	=	6
 ;MINZ		=	8
 ;PERSP_SHIFT	=	2
 
@@ -104,10 +96,14 @@ PERSP_SHIFT	=	2
 ;TEXTURES	=	1
 ;TEXSHADE	=	2
 ;POLYSIDES	=	4
-;MAX_LIGHTS	=	6
 ;MINZ		=	8
 ;PERSP_SHIFT	=	2
 
+;
+; MAX_LIGHTS
+; Maximum number of lights in a scene
+;
+MAX_LIGHTS	=	6
 
 	.include 	'jaguar.inc'
 ;
