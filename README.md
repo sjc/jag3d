@@ -72,8 +72,6 @@ Each object is rendered to the current buffer using `RenderObject()`. For the de
 ## TODO
 
 - Fix issue where wireframe renderer draws a line across top and bottom of the screen
-- Fix issue where the wireframe renderer doesn't use the last line of the buffer
-- Fix issue where Gouraud renderers don't use the last 2 lines of the buffer
 - Optomise GPU code, particularly with respect to instruction order
 - Investigate using GPU memory as scratch space for low-point models
 
