@@ -293,12 +293,8 @@ zposn       .equr   r19,1
     addqt   #4,cam
     moveta  temp2,destflags
     load    (cam),temp2     ; get the bitmap address
-
     moveta  temp2,destaddr
-.if (^^defined WIREFRAME)
-    subqt   #1,temp0        ; the wireframe renderer draws all the way to the
-    subqt   #1,temp1        ; right and bottom edges (polygon renderers don't)
-.endif
+
     shlq    #15,temp0       ; convert to 16.16, and divide by 2
     shlq    #15,temp1
     move    temp1,temp2
@@ -306,8 +302,10 @@ zposn       .equr   r19,1
 
     movei   #camscale+12,cam    ; or aspectratio+16
 
+.if WIREFRAME = 0
     bset    #15,temp1       ; add 1/2 for rounding
     bset    #15,temp0
+.endif
     store   temp1,(cam)     ; store ycenter (=height/2)
     subqt   #4,cam
     store   temp0,(cam)     ; store xcenter (=width/2)
