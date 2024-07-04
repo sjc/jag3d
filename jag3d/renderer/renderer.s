@@ -357,12 +357,24 @@ initcode:
 	.globl	_GPUP1,_GPUP2
 	.globl	_gpubuf
 
-	.long
-endblit:
-
-_GPUP1	=	endblit
+_GPUP1	=	initcode
 _GPUP2	=	_GPUP1 + (4*SIZEOF_POLYGON)
 _gpubuf = 	_GPUP2 + (4*SIZEOF_POLYGON)
+; _gpubuf must be phrase aligned!
+
+;
+; One-time initialisation code
+;
+
+	.globl	_renderer_init
+_renderer_init:
+
+	.include 	"init.inc"
+
+	; will stop the GPU once done
+
+	.long
+endblit:
 
 	.PRINT  "renderer.s:"
 	.PRINT	"GPU RAM USE: ",/u/w (endblit-startblit), " Bytes used"

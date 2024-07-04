@@ -25,12 +25,14 @@ extern long params[];
 ;
 
 void
-LoadRenderer(long *gpucode)
+LoadAndInitRenderer(long *gpucode, void *gpufunc)
 {
     GPUload(gpucode);
 
     // TODO: calculate the space left in GPU memory, so we could
     //  potentially use it as the triangle scratch space
+
+    GPUrun(gpufunc);
 }
 
 void

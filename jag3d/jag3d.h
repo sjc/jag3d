@@ -11,10 +11,11 @@
 
 // start and entry points for the renderer
 extern long renderer_code[];
+extern long renderer_init[];
 extern long renderer_frameinit[];
 extern long renderer_objinit[];
 
-void LoadRenderer(long *gpucode);
+void LoadAndInitRenderer(long *gpucode, void *gpufunc);
 void SetupFrame(void *gpufunc, Bitmap *window, Angles *camangles);
 void RenderObject(void *gpufunc, N3DObject *obj, Lightmodel *lmodel, TPoint *tpoints);
 

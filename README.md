@@ -12,7 +12,7 @@ This is a modified version of Atari's 3D demo for the Jaguar. Specifically, it i
     - TODO: Build into a `/build` directory and stop littering `.o` files everywhere
 - Refactored the renderer
     - Interface changed to better suit use in a game
-        - Load into GPU memory once
+        - Load into GPU memory and init once
         - One entry point to init shared data once per frame
         - Second entry point to draw each object, to allow multiple calls with minimum re-setup
     - Moved object matrix calculation code to the GPU (replacing 68k `mkMatrix()`)
@@ -61,7 +61,7 @@ The type of renderer to use should be chosen by un-commenting the appropriate bl
 
 If the "Gouraud Shaded Textures" version is used, the `FixModelTextures()` function should be run on each of your models. (NOTE: This renderer doesn't run well at the moment, probably due to lack of buffer memory in the GPU. This should improve in the future.)
 
-Load the renderer into GPU memory with `LoadRenderer()`. For the default renderer build, pass `renderer_code` as parameter. If you are not using the GPU for anything else, this can be done once eg. before entering your main game loop.
+Load the renderer into GPU memory with `LoadAndInitRenderer()`. For the default renderer build, pass `renderer_code` as the first parameter and `renderer_init` as the second. If you are not using the GPU for anything else, this can be done once eg. before entering your main game loop. Once the init code has been run it is no longer needed and the space it uses if freed-up for use by the renderer.
 
 At the start of each frame, after swapping the screen buffers and making any updates to the camera's position and orientation, call `SetupFrame()`. This sets up values used by all subsequent objects. For the default renderer, pass `renderer_frameinit` as parameter.
 

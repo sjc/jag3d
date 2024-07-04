@@ -252,7 +252,7 @@ main()
    tpoints = malloc(temp * sizeof(TPoint));
 
 	/* load the renderer into GPU memory */
-	LoadRenderer(renderer_code);
+	LoadAndInitRenderer(renderer_code, renderer_init);
 
 	/* loop forever */
 	for(;;) {
