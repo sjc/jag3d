@@ -10,6 +10,7 @@ include $(JAGSDK)/tools/build/jagdefs.mk
 
 INC=include
 LIB=lib
+LIBJAG=libjag.a
 FONTDIR=fonts
 MODELDIR = models
 MODELOBJEXT = data.a
@@ -23,6 +24,9 @@ JAG3D_REND=$(JAG3D)/renderer
 #############################################################################
 
 CFLAGS += -mshort -Wall -fno-builtin -nostdinc -I$(INC)
+RM = rm -f
+AR = ar
+ARFLAGS = crs
 
 #############################################################################
 # C library objects
@@ -37,6 +41,10 @@ LIBOBJS = $(LIB)/alloc.o $(LIB)/clock.o $(LIB)/ctype.o $(LIB)/font.o \
 	$(LIB)/olist.o $(LIB)/sprintf.o $(LIB)/strcat.o $(LIB)/strcmp.o \
 	$(LIB)/strcpy.o $(LIB)/strdup.o $(LIB)/strncmp.o $(LIB)/util.o \
 	$(LIB)/video.o
+
+$(LIBJAG): $(LIBOBJS)
+	$(AR) $(ARFLAGS) $(LIBJAG) $(LIBOBJS)
+	$(RM) $(LIBOBJS)
 
 #
 # These are the files unique to the current project
@@ -63,7 +71,7 @@ $(JAG3D_REND)/renderer.o: $(JAG3D_REND)/renderer.s $(JAG3D_REND_INCS)
 MODELDIRS = $(filter-out _% $(MODELDIR)/,$(patsubst $(MODELDIR)/%/,%,$(dir $(wildcard $(MODELDIR)/*/))))
 
 #
-# The model object file is named after its directory with $(EXT) suffix
+# The model object file is named after its directory with $(MODELOBJEXT) suffix appended
 #
 MODELS = $(foreach D,$(MODELDIRS),$D$(MODELOBJEXT))
 
@@ -79,7 +87,7 @@ PROGS = demo.cof
 
 FIXDATA = -ii $(FONTDIR)/clr6x12.jft _usefnt
 
-OBJS = $(CRT0) $(SRCOBJS) $(MODELS) $(LIBOBJS) $(JAG3D_OBJS)
+OBJS = $(CRT0) $(SRCOBJS) $(MODELS) $(LIBJAG) $(JAG3D_OBJS)
 
 demo.cof: $(OBJS)
 	$(LINK) $(LINKFLAGS) -o demo.cof $(OBJS) $(FIXDATA)
