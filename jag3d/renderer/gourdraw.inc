@@ -22,17 +22,23 @@ gourpoly:
 ;
 ; make sure the blitter is off
 ;
-	movefa	bcmd_ptr,temp0
-.bwait:
-	load	(temp0),temp1
-	btst	#0,temp1
-	jr	EQ,.bwait
-	nop
+; commented-out because the calling code will have done the same just before jumping here
+;
+;	movefa	bcmd_ptr,temp0
+;.bwait:
+;	load	(temp0),temp1
+;	btst	#0,temp1
+;	jr	EQ,.bwait
+;	nop
+
+; considering the above, temp0 == bcmd_ptr
 
 	addqt	#4,temp0		; now temp0 = address of B_COUNT
 	moveta	temp0,bcount_ptr
 
-	movei	#B_I3,temp0
+	;movei	#B_I3,temp0 	; B_COUNT + 64 so could do 2 addq
+	addqt 	#32,temp0
+	addqt 	#32,temp0
 
 	movei	#PATDSEL|GOURD|ZBUFF|ZMODEGT|DSTENZ|DSTWRZ|DSTEN|BKGWREN,temp1
 
@@ -49,12 +55,19 @@ gourpoly:
 	movefa	destaddr,temp1
 	subqt	#(A1_PIXEL-A1_BASE),temp2
 	store	temp1,(temp2)		; set A1_BASE
-	addqt	#4,temp2
+	
 	movefa	destflags,temp1
-	movei	#XADDPIX,temp0
-	or	temp1,temp0
+	addqt	#4,temp2
+
+	;movei	#XADDPIX,temp0  	; XADDPIX = 0x00010000 
+	;or		temp1,temp0
+	bset 	#16,temp1
+
 	jump	(return)
-	store	temp0,(temp2)		; set A1_FLAGS
+	store	temp1,(temp2)		; set A1_FLAGS
+
+
+
 
 ;
 ; per-trapezoid routine for gouraud shading
@@ -68,9 +81,15 @@ gourtrap:
 	ADDTIME	POLYSETUP
 .endif
 
-	movei	#B_ZINC,bzinc_ptr
-	movei	#B_IINC,biinc_ptr
+	;movei	#B_ZINC,bzinc_ptr
+	;movei	#B_IINC,biinc_ptr
+	; do these need to be set every time through?
+	move 	bi3_ptr,bzinc_ptr
+	move 	bi3_ptr,biinc_ptr
+	subqt 	#8,bzinc_ptr
+	subqt	#12,biinc_ptr
 
+								; $FFFF0000
 	shrq	#16,ay				; strip fractional part of ay
 	movei	#gourline,traploop
 	shlq	#16,ay
@@ -85,8 +104,8 @@ gourline:
 	move	rightx,bcount
 	shrq	#16,atemp0
 	shrq	#16,bcount
-	or	atemp0,ay			; ay = destination pixel (Y|X)
-	sub	atemp0,bcount			; bcount = # of pixels to write
+	or		atemp0,ay			; ay = destination pixel (Y|X)
+	sub		atemp0,bcount		; bcount = # of pixels to write
 
 
 	cmpq	#1,bcount
@@ -105,17 +124,17 @@ gourline:
 	moveq	#1,atemp1
 	shlq	#16,atemp0
 	shlq	#14,atemp1
-	div	atemp0,atemp1		; atemp1 will be a 14 bit signed fraction
-
-	bset	#16,bcount
+	div		atemp0,atemp1		; atemp1 will be a 14 bit signed fraction
+		; is there a way to replace this div?
+	bset	#16,bcount 			; ready for blitter: lines|rows = 1|bcount
 
 ;
 ; set up b_zinc and b_iinc
 ;
 	move	righti,b_iinc
 	move	rightz,b_zinc
-	sub	lefti,b_iinc
-	sub	leftz,b_zinc
+	sub		lefti,b_iinc
+	sub		leftz,b_zinc
 	sharq	#9,b_iinc
 	sharq	#14,b_zinc
 	imult	atemp1,b_iinc
@@ -133,6 +152,7 @@ gourline:
 	btst	#0,atemp0
 	jr	EQ,.bwait
 	nop
+
 .if (^^defined PROFILING)
 	ADDTIME	BLITWAIT
 .endif
@@ -145,28 +165,28 @@ gourline:
 	store	b_zinc, (bzinc_ptr)
 	store	lefti, (bi3_ptr)
 	store	leftz, (bz3_ptr)
-	store	ay,(a1_ptr)		; set A1_PIXEL
+	store	ay,(a1_ptr)			; set A1_PIXEL
 	store	bcount,(bcount_ptr)
 	store	bcmdval,(bcmd_ptr)	; starts the blit
 
 .zerocount:
-	add	rightxstep,rightx
-	add	leftxstep,leftx
+	add		rightxstep,rightx
+	add		leftxstep,leftx
 	movefa	leftistep,atemp1
 	movefa	leftzstep,atemp0
-	add	atemp1,lefti
-	add	atemp0,leftz
+	add		atemp1,lefti
+	add		atemp0,leftz
 	sat24	lefti
 	movefa	rightistep,atemp1
 	movefa	rightzstep,atemp0
-	add	atemp1,righti
-	add	atemp0,rightz
+	add		atemp1,righti
+	add		atemp0,rightz
 	sat24	righti
 
 	shrq	#16,ay
 	subq	#1,anumlines
 	addqt	#1,ay
-	jump	PL,(traploop)
+	jump	PL,(traploop) ; .gourline
 	shlq	#16,ay
 
 

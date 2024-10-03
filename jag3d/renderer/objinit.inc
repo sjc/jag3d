@@ -15,15 +15,12 @@
 
 ;
 ; rename registers
-;  TODO: work out which ones we need
 ;
 
 objdata     .equr   orclips             ; pointer to object data
 objmat      .equr   subr                ; pointer to object matrix
 srclmodel   .equr   andclips            ; pointer to lighting model
-;cammat      .equr   pgon                ; pointer to camera matrix
 
-destplanes  .equr   r4,1                ; pointer to GPU RAM clipping planes
 tpoints     .equr   r5,1
 ptcount     .equr   r6,1
 points      .equr   r7,1
@@ -37,12 +34,6 @@ matlist     .equr   r8,1                ; pointer to material list
     addqt   #4,temp0            ; 
     load    (temp0),objmat          ; get pointer to object angles
     addqt   #4,temp0
-
-    ;load    (temp0),cam         ; get output bitmap pointer
-    ;addqt   #4,temp0
-    ;load    (temp0),cammat          ; get camera matrix pointer
-    ;addqt   #4,temp0
-
     load    (temp0),srclmodel       ; get pointer to source lighting model
     addqt   #4,temp0
     load    (temp0),tpoints         ; get pointer to "tpoints" array
@@ -50,6 +41,8 @@ matlist     .equr   r8,1                ; pointer to material list
 ;
 ; load object data information
 ;
+    ; TODO can we speed this up by assuming they're aligned to long words and loading 2 at once?
+
     loadw   (objdata),tricount      ; get number of triangles
     addqt   #2,objdata
     loadw   (objdata),ptcount       ; get number of points
@@ -73,28 +66,10 @@ matlist     .equr   r8,1                ; pointer to material list
     addqt   #4,temp0
     store   matlist,(temp0)         ; store texture list table
 
-    .equrundef  destplanes
     .equrundef  tpoints
     .equrundef  ptcount
     .equrundef  points
     .equrundef  matlist
-
-;
-; make sure the blitter is free
-;
-    movei   #B_CMD,temp2
-.bwait:
-    load    (temp2),temp0
-    btst    #0,temp0
-    jr  EQ,.bwait
-    nop
-
-;
-; zero out the clipping rectangle
-;
-    moveq   #0,temp0
-    movei   #A1_CLIP,temp1
-    store   temp0,(temp1)
 
 ;
 ; clear the point transformation array
@@ -103,8 +78,12 @@ matlist     .equr   r8,1                ; pointer to material list
 ; each 16 bytes long
 ;
 
-; KEEP THIS FOR NOW, BUT WORK OUT WHETHER WE JUST WRITE OVER THE SCRATCH SPACE ANYWAY
-; no, it checks bit #7 of the first longword to see if the point is valid...
+    ; slightly changed to only clear the first 4 bytes, in the hope it might be a
+    ;   little faster, although it seems unlikely to help
+    ; not using phase mode may even be slower
+    ; TODO: look into just clearing the first phase
+
+    ; TODO: see whether we could do this with a tight code loop
 
     moveq   #0,temp0
     movefa  a1_ptr,temp2
@@ -112,17 +91,20 @@ matlist     .equr   r8,1                ; pointer to material list
     subqt   #(A1_PIXEL-A1_BASE),temp2
     movei   #gtpoints,temp1
     load    (temp1),temp1
-    movei   #(PIXEL8|WID16|PITCH1|XADDPHR),temp0        ; flags for the blit
+    movei   #(PIXEL8|WID16|PITCH1|XADDPIX),temp0        ; flags for the blit 
+        ; XADDPHR
     store   temp1,(temp2)       ; A1_BASE = tpoints
     addqt   #4,temp2
     store   temp0,(temp2)       ; A1_FLAGS = temp0
     movei   #A1_STEP,temp2
-    movei   #$0001FFF0,temp0
+    ;movei   #$0001FFF0,temp0 ; draw 4, step = -4
+    movei   #$0001FFFC,temp0
     store   temp0,(temp2)       ; A1_STEP = -16 in X, 1 in Y
     movei   #gnumpoints,temp1
     load    (temp1),temp1
     shlq    #16,temp1       ; number of lines is = to the number of points
-    bset    #4,temp1        ; number of "pixels" per line is 16
+    ;bset    #4,temp1        ; number of "pixels" per line is 16
+    bset    #2,temp1
     movei   #B_COUNT,temp2
     store   temp1,(temp2)
     subqt   #(B_COUNT-B_CMD),temp2
@@ -141,8 +123,8 @@ matlist     .equr   r8,1                ; pointer to material list
 destmat     .equr   r4,1        ; pointers to matrices
 srcmat      .equr   r5,1
 
-srcyx       .equr   r6,1        ; source data for matrix multiply (Y component in high word, X in low word)
-src1z       .equr   r7,1
+srcyx       .equr   r6,1        ; source data for matrix multiply 
+src1z       .equr   r7,1        ; Y component in high word, X in low word
 
 xrite       .equr   r8,1        ; result registers for matrix multiply
 xdown       .equr   r9,1
@@ -189,87 +171,54 @@ col4b       .equr   r7,0
 
 ;
 ; Call calc_matrix() to load the object angles from objmat and calculate
-;   the matrix into the correct registers
+;   the matrix into the named registers
 ;
 
-    move    objmat,temp0
+    move    objmat,temp0            ; pointer to the angles struct for this object
     movei   #calc_matrix,temp1
     move    PC,return
     jump    (temp1)
     addqt   #6,return
 
-; the following code comments-out the old loading code but keeps the code
-;   related to calculating whatever it's calculating
-
     ; required to fix-up some overflowing values, which happens because
     ;   we're now calculating these on the GPU to 32-bits, rather than
     ;   loading 16-bit values from memory
+    ; TODO: move this into the matrix calculation if we have to fix them
+    ;   everywhere
+    
     movei   #$0000FFFF,temp0
 
 ; column 1
-    ;move   objmat,temp0               ; get pointer to second matrix
-    ;loadw  (temp0),xrite
-    ;addqt  #2,temp0
-    ;loadw  (temp0),xdown
-    ;addqt  #2,temp0
-    
     move    xdown,srcyx
     and     temp0,xrite         ; fix potential overflow
     shlq    #16,srcyx
     and     temp0,xhead         ; fix potential overflow
     or      xrite,srcyx
 
-    ;loadw  (temp0),xhead
-    ;addqt  #2,temp0
-
     moveta  xhead,col1b
     moveta  srcyx,col1a
 
 ; column 2
-    ;loadw  (temp0),yrite
-    ;addqt  #2,temp0
-    ;loadw  (temp0),ydown
-    ;addqt  #2,temp0
-    
     move    ydown,srcyx
     and     temp0,yrite         ; fix potential overflow
     shlq    #16,srcyx
     and     temp0,yhead         ; fix potential overflow
     or      yrite,srcyx
     
-    ;loadw  (temp0),yhead
-    ;addqt  #2,temp0             ; move to top of next column
-    
     moveta  yhead,col2b
     moveta  srcyx,col2a
 
 ; column 3
-
-    ;loadw  (temp0),zrite
-    ;addqt  #2,temp0
-    ;loadw  (temp0),zdown
-    ;addqt  #2,temp0
-    
     move    zdown,srcyx
     and     temp0,zrite         ; fix potential overflow
     shlq    #16,srcyx
     and     temp0,zhead         ; fix potential overflow
     or      zrite,srcyx
 
-    ;loadw  (temp0),zhead
-    ;addqt  #2,temp0
-
     moveta  zhead,col3b
     moveta  srcyx,col3a
 
 ; column 4
-
-    ;loadw  (temp0),xposn
-    ;addqt  #2,temp0
-    ;loadw  (temp0),yposn
-    ;addqt  #2,temp0
-
-    ; shouldn't need to fix these, since they are not altered by calc_matrix()
 
     ; TODO: calc_matrix() could read x and y in as a single long
     ;   and pass it back pre-packed
@@ -288,10 +237,8 @@ col4b       .equr   r7,0
 ; registers; now we need the posn registers to be recalculated correctly
 ;*
 
-; CALCULATION PERFORMED WITH OBJECT MATRIX
+    ; calculate new object position from the object matrix
 
-    .globl  dolight
-dolight:
     imultn  xrite,xposn
     imacn   xdown,yposn
     imacn   xhead,zposn
@@ -316,6 +263,7 @@ dolight:
     move    temp0,xposn
     move    temp1,yposn
     move    temp2,zposn
+
 ;*
 ; Transform lights to object space
 ; srclmodel points to the source lighting model
@@ -349,11 +297,11 @@ dolight:
 ; register aliases for the next section
 ;
 
-lx  .equr   srcmat
-ly  .equr   srcyx
-lz  .equr   src1z
+lx      .equr   srcmat
+ly      .equr   srcyx
+lz      .equr   src1z
 bright  .equr   r20,1
-one .equr   r21,1
+one     .equr   r21,1
 
 ;
 ; while (numlights > 0)
@@ -380,9 +328,9 @@ one .equr   r21,1
 ; 1 (=$4000 in 0.14 format) for in-scene lights (which transform like
 ; points)
 ;
-    moveq   #0,one
     btst    #15,bright      ; sunlight vectors have bit 15 clear
-    jr  EQ,.sunlight
+    moveq   #0,one
+    jr      EQ,.sunlight
     nop
         bset    #14,one
 .sunlight:
@@ -397,6 +345,7 @@ one .equr   r21,1
     imacn   yhead,lz
     imacn   yposn,one
     resmac  temp1
+
     sharq   #14,temp0       ; X value for light
     shlq    #2,temp1        ; Y value for light is in high word
     shlq    #16,temp0
@@ -410,6 +359,7 @@ one .equr   r21,1
     imacn   zhead,lz
     imacn   zposn,one
     resmac  temp0           ; Z value for light
+
     sharq   #14,temp0
     shlq    #16,temp0
     or  bright,temp0        ; put brightness in low word
@@ -542,50 +492,11 @@ one .equr   r21,1
     store   temp1,(destmat)
     addqt   #4,destmat
     store   temp2,(destmat)
-    addqt   #4,destmat
-    movei   #$4000,temp0
-    store   temp0,(destmat)
 
-;
-; get camera info, and adjust the transformation matrix so that
-; it transforms the viewing pyramid into "canonical" form
-; (-z < x,y < z)
-;
-;    loadw   (cam),temp0     ; get width
-;    addqt   #2,cam
-;    loadw   (cam),temp1     ; get height
-;    addqt   #2,cam
-;    load    (cam),temp2     ; get the blitter flags
-;    addqt   #4,cam
-;    moveta  temp2,destflags
-;    load    (cam),temp2     ; get the bitmap address
-;
-;    moveta  temp2,destaddr
-;.if (^^defined WIREFRAME)
-;    subqt   #1,temp0        ; the wireframe renderer draws all the way to the
-;    subqt   #1,temp1        ; right and bottom edges (polygon renderers don't)
-;.endif
-;    shlq    #15,temp0       ; convert to 16.16, and divide by 2
-;    shlq    #15,temp1
-;    move    temp1,temp2
-;    div temp0,temp2     ; make temp2 = aspect ratio = height/width
-;
-;    movei   #camscale+12,cam
-;    bset    #15,temp1       ; add 1/2 for rounding
-;    bset    #15,temp0
-;    store   temp1,(cam)     ; store ycenter (=height/2)
-;    subqt   #4,cam
-;    store   temp0,(cam)     ; store xcenter (=width/2)
-;    subqt   #4,cam
-;    sharq   #16,temp1       ; convert back to 0.16 integers
-;    sharq   #16,temp0
-;    store   temp1,(cam)     ; store yscale
-;    subqt   #4,cam
-;    store   temp0,(cam)     ; store xscale
-;
-;    shrq    #2,temp2        ; convert aspect ratio to a 0.14 fixed point number
+    ; the 4th value is always $4000, so we pre-set the _GPUcampos storage to this
 
     ; Restore the `aspectratio` value we calculated in frameinit()
+    ; can we either guarentee that cam -> aspectratio, or store aspectration in a reg?
 
     movei   #aspectratio,cam
     load    (cam),temp2

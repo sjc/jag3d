@@ -43,19 +43,19 @@ thisplane	.equr	r4
 ; clip to remaining (screen) planes here
 ;*
 
-
-	movei	#_GPUscplanes+16,thisplane		; clip to remaining planes
 .cloop:
+	
 	cmpq	#0,orclips				; all done clipping?
 	jr	EQ,.nomoreclips
 	shrq	#1,orclips
 	jr	CC,.dontclip
-	nop
+	addqt 	#16,thisplane
+
 		move	PC,return			; clip to this plane
 		jump	(subr)				; (subr still contains clip_to_plane)
 		addqt	#6,return
 .dontclip:
-		addqt	#16,thisplane			; move to next plane
+		;addqt	#16,thisplane			; move to next plane
 		jr	.cloop
 		nop
 .nomoreclips:
@@ -105,34 +105,35 @@ Z		.equr	r15,1
 	move	PC,persploop	; set persploop to .loop
 	subqt	#12,cam
 	addqt	#6,persploop
+
 .loop:
 	load	(pt),X
 	addqt	#4,pt
+	moveq	#1,zfrac
 	load	(pt),Y
 	addqt	#4,pt		; move to Z
-	moveq	#1,zfrac
-	load	(pt),Z		; 
 	shlq	#30,zfrac
+	load	(pt),Z		; 
 	subqt	#8,pt		; back to beginning of point
-	div	Z,zfrac		; we may assume Z > 0, since we've clipped already
+	div		Z,zfrac		; we may assume Z > 0, since we've clipped already
 
 	move	X,temp1		; normalize X and Y
 	move	Y,temp2
-	abs	temp1		; temp1 = normi(X)
-	abs	temp2		; temp2 = normi(Y)
+	abs		temp1		; temp1 = normi(X)
+	abs		temp2		; temp2 = normi(Y)
 	normi	temp1,temp1
 	normi	temp2,temp2
 	addqt	#9,temp1
 	addqt	#9,temp2
-	sha	temp1,X
-	sha	temp2,Y
-	normi	zfrac,znorm
-	addqt	#9,znorm
-	sha	znorm,zfrac
-	add	znorm,temp1
-	add	znorm,temp2
-	neg	temp1
-	neg	temp2
+		normi	zfrac,znorm
+		sha		temp1,X
+		addqt	#9,znorm
+		sha		temp2,Y
+	sha		znorm,zfrac
+	add		znorm,temp1
+	add		znorm,temp2
+	neg		temp1
+	neg		temp2
 	addqt	#((30-15)),temp1		; we'll pre-shift the result by 15 in order to multiply by cam->xscale
 	addqt	#((30-15)),temp2		; and cam->yscale
 	imult	zfrac,X
@@ -141,22 +142,22 @@ Z		.equr	r15,1
 	sharq	#15,Y
 	imult	xscale,X		; scale for this camera
 	imult	yscale,Y
-	sha	temp1,X			; re-normalize the values
-	sha	temp2,Y
-	add	xcenter,X
-	add	ycenter,Y
+	sha		temp1,X			; re-normalize the values
+	sha		temp2,Y
+	add		xcenter,X
+	add		ycenter,Y
 	store	X,(pt)			; save X, Y
 	addqt	#4,pt
+		; stall
 	store	Y,(pt)
+	addqt	#4,pt
 .if PERSP_SHIFT > 0
 	shlq	#PERSP_SHIFT,Z
 .endif
-	addqt	#4,pt
-	store	Z,(pt)
 	subq	#1,vertsrem		; interleaved
-	addqt	#16,pt			; move to next point
+	store	Z,(pt)
 	jump	PL,(persploop)
-	nop
+	addqt	#16,pt			; move to next point
 
 ;*
 ; end of perspective transform

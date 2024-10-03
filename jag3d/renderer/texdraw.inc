@@ -22,12 +22,15 @@ texpoly:
 ;
 ; make sure the blitter is off
 ;
-	movefa	bcmd_ptr,temp0
-.bwait:
-	load	(temp0),temp1
-	btst	#0,temp1
-	jr	EQ,.bwait
-	nop
+; commented-out because the calling code will have done the same just before jumping here
+; will remove the jump here entirely
+;
+;	movefa	bcmd_ptr,temp0
+;.bwait:
+;	load	(temp0),temp1
+;	btst	#0,temp1
+;	jr	EQ,.bwait
+;	nop
 
 	jump	(return)
 	nop
@@ -51,7 +54,7 @@ textrap:
 	store	destaddr,(atemp2)		; set A2_BASE
 
 	movei	#XADDPIX,atemp1
-	or	destflags,atemp1
+	or		destflags,atemp1
 	movei	#A2_FLAGS,atemp2
 	store	atemp1,(atemp2)		; set A2_FLAGS
 ;
@@ -60,30 +63,28 @@ textrap:
 	movei	#A1_BASE,atemp2
 	store	srcaddr,(atemp2)
 	movei	#XADDINC,atemp1
-	or	srcflags,atemp1
+	or		srcflags,atemp1
 	addqt	#4,atemp2
 	store	atemp1,(atemp2)
 
-
+		; replace with AND if we can spare a reg
 	shrq	#16,ay						; strip fractional part of ay
 	shlq	#16,ay
 
-
-	subq	#1,anumlines
 	movei	#texdone,atemp0
-	jump	MI,(atemp0)
+	subq	#1,anumlines
+	jump	MI,(atemp0) 	; finished
 	nop
 
 	.globl	texline1
 texline1:
 
-
-	move	leftx,atemp0
 	move	rightx,bcount
-	shrq	#16,atemp0
+	move	leftx,atemp0
 	shrq	#16,bcount
-	sub	atemp0,bcount
-	or	atemp0,ay		; now ay has Y in high word, X in low word
+	shrq	#16,atemp0
+	sub		atemp0,bcount
+	or		atemp0,ay		; now ay has Y in high word, X in low word
 
 	cmpq	#1,bcount
 	movei	#texzerocount,atemp0
@@ -96,7 +97,7 @@ texline1:
 	moveq	#1,atemp1
 	shlq	#16,atemp0
 	shlq	#14,atemp1
-	div	atemp0,atemp1		; atemp1 will be a 14 bit signed fraction
+	div		atemp0,atemp1		; atemp1 will be a 14 bit signed fraction
 
 	bset	#16,bcount
 ;
@@ -109,20 +110,20 @@ texline1:
 	shrq	#16,srcpix			; low word of srcpix has integer part of leftu in it
 	shlq	#16,atemp0			; high word of atemp0 has integer part of leftv in it
 	move	leftu,srcfpix
-	or	atemp0,srcpix
+	or		atemp0,srcpix
 	shlq	#16,srcfpix			; now srcfpix has fractional part of leftu in high word
 	move	leftv,atemp0
 	shrq	#16,srcfpix
 	shlq	#16,atemp0
-	or	atemp0,srcfpix
+	or		atemp0,srcfpix
 
 ;
 ; calculate b_uinc and b_vinc
 ;
 	move	rightv,b_vinc
 	move	rightu,b_uinc
-	sub	leftv,b_vinc		; find delta V
-	sub	leftu,b_uinc		; find delta U
+	sub		leftv,b_vinc		; find delta V
+	sub		leftu,b_uinc		; find delta U
 	sharq	#10,b_vinc		; convert to 16 bit (assumes U,V are less than 512)
 	sharq	#10,b_uinc
 	imult	atemp1,b_vinc		; multiply by 1/linelen
@@ -133,14 +134,17 @@ texline1:
 ; calculate b_zinc
 ;
 	move	rightz,b_zinc		; find delta Z
-	sub	leftz,b_zinc
+		; stall
+	sub		leftz,b_zinc
+		; stall
 	move	b_zinc,atemp0		; atemp0 will hold the fractional part of delta Z
 	sharq	#16,b_zinc		; put integer part of delta Z in low word
 	imult	atemp1,atemp0		; multiply fractional part by reciprocal of line length (a 14 bit number)
 	imult	atemp1,b_zinc		; multiply integer part by reciprocal of line length	(a 14 bit number)
 	sharq	#14,atemp0		; normalize fractional product
 	shlq	#2,b_zinc		; normalize integer product
-	add	atemp0,b_zinc
+		; stall
+	add		atemp0,b_zinc
 ;
 ; now set up b_uinc so it is the integer part of A1_INC, b_vinc so it is the fractional part
 ;
@@ -149,12 +153,15 @@ texline1:
 	shrq	#16,atemp0			; strip fractional part of VINC
 	shrq	#16,b_uinc			; get integer part of UINC into low word
 	shlq	#16,atemp0
-	or	atemp0,b_uinc			; integer part of VINC goes into high word of b_uinc
+		; replace with AND $FFFF0000,atemp0
+	or		atemp0,b_uinc		; integer part of VINC goes into high word of b_uinc
 
 	shlq	#16,atemp1			; atemp2 has UINC; strip high word (integer part)
 	shlq	#16,b_vinc
 	shrq	#16,atemp1
-	or	atemp1,b_vinc
+		; replace with AND $FFFF0000,atemp1
+		; stall
+	or		atemp1,b_vinc
 
 	movei	#FIRSTBCMD,bcmdval
 
@@ -188,20 +195,21 @@ texline1:
 texzerocount:
 	movefa	leftistep,atemp1
 	movefa	leftzstep,atemp0
-	add	atemp1,lefti
-	add	atemp0,leftz
-	add	rightxstep,rightx
-	add	leftxstep,leftx
+	add		atemp1,lefti
+	add		atemp0,leftz
+	add		rightxstep,rightx
+	add		leftxstep,leftx
 	movefa	leftvstep,atemp0
 	movefa	leftustep,atemp1
-	add	atemp0,leftv
-	add	atemp1,leftu
+	add		atemp0,leftv
+	add		atemp1,leftu
 	movefa	rightvstep,atemp0
 	movefa	rightustep,atemp1
-	add	atemp0,rightv
-	add	atemp1,rightu
+	add		atemp0,rightv
+	add		atemp1,rightu
 	movefa	rightzstep,atemp0
-	add	atemp0,rightz
+		; stall
+	add		atemp0,rightz
 	movei	#texline1,atemp1
 	shrq	#16,ay				; isolate just the Y value
 	subq	#1,anumlines

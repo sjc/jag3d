@@ -38,214 +38,221 @@ zposn       .equr   r19,1
 
 ; rename temps
 
-alpha_sin   .equr   r4,1
+;alpha_sin   .equr   r4,1   -- will use zdown
 alpha_cos   .equr   r5,1
-beta_sin    .equr   r20,1
-beta_cos    .equr   r21,1
+;beta_sin    .equr   r20,1  -- will use zrite
+;beta_cos    .equr   r21,1  -- will use zhead
 gamma_sin   .equr   r6,1
-gamma_cos   .equr   r7,1
+;gamma_cos   .equr   r7,1   -- will use yhead
 
     ; load from angles struct
 
-    loadw   (temp0),alpha_sin
-    addqt   #2,temp0
-    loadw   (temp0),alpha_cos
-    addqt   #2,temp0
-    loadw   (temp0),beta_sin
-    addqt   #2,temp0
-    loadw   (temp0),beta_cos
-    addqt   #2,temp0
-    loadw   (temp0),gamma_sin
-    addqt   #2,temp0
-    loadw   (temp0),gamma_cos
-    addqt   #2,temp0
-    loadw   (temp0),xposn
-    addqt   #2,temp0
-    loadw   (temp0),yposn
-    addqt   #2,temp0
-    loadw   (temp0),zposn
+    ; this version requires that the struct is long world aligned
 
-    ;d3 = alpha sin
-    ;d4 = beta sin
-    ;d5 = gamma sin
-    ;d6 = alpha cos
-    ;d7 = beta cos
-    ;a5 = gamma cos
+    movei   #$0000FFFF,temp1 ; mask -- keep this in a reg somewhere?
+
+    ;loadw   (temp0),zdown ;alpha_sin
+    ;addqt   #2,temp0
+    ;loadw   (temp0),alpha_cos
+    ;addqt   #2,temp0
+
+    load   (temp0),alpha_cos
+    addqt   #4,temp0
+    move    alpha_cos,zdown     ; = alpha_sin
+    and     temp1,alpha_cos     ; keep lower part
+    shrq    #16,zdown           ; keep upper part
+
+    ;loadw   (temp0),zrite ;beta_sin
+    ;addqt   #2,temp0
+    ;loadw   (temp0),zhead ;beta_cos
+    ;addqt   #2,temp0
+
+    load    (temp0),zhead       ; = beta_cos
+    addqt   #4,temp0
+    move    zhead,zrite         ; = beta_sin
+    and     temp1,zhead         ; keep lower part
+    shrq    #16,zrite           ; keep upper part
+
+    ;loadw   (temp0),gamma_sin
+    ;addqt   #2,temp0
+    ;loadw   (temp0),yhead ;gamma_cos
+    ;addqt   #2,temp0
+
+    load    (temp0),yhead       ; = gamma_cos
+    addqt   #4,temp0
+    move    yhead,gamma_sin
+    and     temp1,yhead         ; keep lower part
+    shrq    #16,gamma_sin       ; keep upper part
+
+    ;loadw   (temp0),xposn
+    ;addqt   #2,temp0
+    ;loadw   (temp0),yposn
+    ;addqt   #2,temp0
+    
+    load    (temp0),yposn
+    addqt   #4,temp0
+    move    yposn,xposn
+    and     temp1,yposn         ; keep lower part
+    shrq    #16,xposn           ; keep upper part
+
+    loadw   (temp0),zposn
 
     ;
     ; xrite = cos(gamma) * cos(beta) + sin(gamma) * sin(beta) * sin(alpha);
     ; 
 
-        ;muls        d7, d0 ; d0 = a5 = gamma cos
-    move   gamma_cos,xrite  ; xrite = d0, destination of maths
-    imult  beta_cos,xrite   ; 32-bit
-
-        ;move.w  d5, d1
-        ;muls    d4, d1
-        ;moveq   #14, d2
-        ;asr.l   d2, d1
+    ; yhead = gamma_cos
+    move   yhead,xrite
     move   gamma_sin,temp1
-    imult  beta_sin,temp1   ; sin(gamma) * sin(beta)
+
+    ; cos(beta) * cos(gamma)
+    ; zhead = beta_cos
+    imult  zhead,xrite
+
+    ; sin(gamma) * sin(beta)
+    ; zrite = beta_sin
+    imult  zrite,temp1   
+                                        ;
+                                        ; xdown = sin(gamma) * cos(alpha);
+                                        ; 
+
+                                        ; xdown = sin(gamma)
+                                        move   gamma_sin,xdown  
+    ; adjust back to 16-bit
     sharq  #14,temp1
+                                        ; cos(alpha) * sin(gamma)
+                                        imult  alpha_cos,xdown  
 
-        ;muls    d3, d1
-        ;add.l   d1, d0
-        ;moveq   #14, d2
-        ;asr.l   d2, d0
-        ;move.w  d0, 0(a1)
-    imult  alpha_sin,temp1  ; sin(alpha) * (sin(gamma) * sin(beta))
+    ; sin(alpha) * (sin(gamma) * sin(beta))
+    ; zdown = sin(alpha)
+    imult  zdown,temp1  
+                                        ; adjust result back to 16-bit
+                                        ; complete
+                                        sharq  #14,xdown
+
+    ; (c(g)*c(b)) + (s(g)*s(b)*s(a))
     add    temp1,xrite
-    sharq  #14,xrite        ; completed
 
-    ;
-    ; xdown = sin(gamma) * cos(alpha);
-    ; 
+    ; from xhead below
+    move    gamma_sin,xhead
 
-        ;move.w  d5, d0
-        ;muls        d6, d0
-        ;moveq   #14, d2
-        ;asr.l   d2, d0
-        ;move.w  d0, 2(a1)
-    move   gamma_sin,xdown  ; xdown = d0, destination of math
-    imult  alpha_cos,xdown  ; 32-bit
-    sharq  #14,xdown
+    ; adjust result back to 16-bit
+    ; completed
+    sharq  #14,xrite        
 
     ;
     ; xhead = sin(gamma) * sin(alpha) * cos(beta) - cos(gamma) * sin(beta);
     ; 
 
-        ;move.w  d5, d0
-        ;muls        d3, d0
-        ;moveq   #14, d2
-        ;asr.l   d2, d0
-    move    gamma_sin,xhead
-    imult   alpha_sin,xhead
+    ;move    gamma_sin,xhead  -- moved above
+    ; yhead = gamma_cos
+    move    yhead,temp1
+
+    ; sin(gamma) * sin(alpha)
+    ; zdown = sin(alpha)
+    imult   zdown,xhead
+
+    ; sin(beta) * cos(gamma)
+    ; zrite = beta_sin
+    imult   zrite,temp1
+
     sharq   #14,xhead
 
-        ;muls        d7, d0
-    imult   beta_cos,xhead  ; 32-bit
+                                        ;
+                                        ; yrite = cos(gamma) * sin(alpha) * sin(beta) - sin(gamma) * cos(beta)
+                                        ; 
 
-        ;move.w  a5, d1
-        ;muls        d4, d1
-    move    gamma_cos,temp1
-    imult   beta_sin,temp1  ; 32-bit
-    
-        ;sub.l   d1, d0
-        ;moveq   #14, d2
-        ;asr.l   d2, d0
-        ;move.w  d0, 4(a1)
+                                        ; yhead = gamma_cos
+                                        move    yhead,yrite
+
+    ; cos(beta) * (sin(beta) * cos(gamma))
+    ; zhead = beta_cos
+    imult   zhead,xhead
+                                        ; cos(gamma) * sin(alpha)
+                                        ; zdown = sin(alpha)
+                                        imult   zdown,yrite
+
+    ; (s(g)*s(a) - c(b)*c(g)*s(b))
     sub     temp1,xhead
-    sharq   #14,xhead       ; completed
+                                        sharq   #14,yrite
+    ; completed
+    sharq   #14,xhead
+                                        ; sin(beta) * (cos(gamma) * sin(alpha))
+                                        ; zrite = beta_sin
+                                        imult   zrite,yrite
+                                        move    gamma_sin,temp1
 
     ;
-    ; yrite = cos(gamma) * sin(alpha) * sin(beta) - sin(gamma) * cos(beta);
+    ; ydown = cos(gamma) * cos(alpha)
     ; 
 
-        ;move.w  a5, d0
-        ;muls        d3, d0
-        ;moveq   #14, d2
-        ;asr.l   d2, d0
-    move    gamma_cos,yrite
-    imult   alpha_sin,yrite
-    sharq   #14,yrite
-
-        ;muls        d4, d0
-    imult   beta_sin,yrite  ; 32-bit
-
-        ;move.w  d5, d1
-        ;muls        d7, d1
-    move    gamma_sin,temp1
-    imult   beta_cos,temp1  ; 32-bit
-
-        ;sub.l   d1, d0
-        ;moveq   #14, d2
-        ;asr.l   d2, d0
-        ;move.w  d0, 6(a1)
-    sub     temp1,yrite
-    sharq   #14,yrite       ; complete
-
-    ;
-    ; ydown = cos(gamma) * cos(alpha);
-    ; 
-
-        ;move.w  a5, d0
-        ;muls        d6, d0
-        ;moveq   #14, d2
-        ;asr.l   d2, d0
-        ;move.w  d0, 8(a1)
-    move    gamma_cos,ydown
+    ; yhead = gamma_cos
+    move    yhead,ydown
+                                        ; cos(beta) * sin(gamma)
+                                        ; zhead = beta_cos
+                                        imult   zhead,temp1
+    ; cos(alpha) * cos(gamma)
     imult   alpha_cos,ydown
-    sharq   #14,ydown       ; complete
+                                        ; (c(g)*s(a)*s(b)) - (s(g)*c(b))
+                                        sub     temp1,yrite
+    ; complete
+    sharq   #14,ydown
+                                        ; complete
+                                        sharq   #14,yrite
 
     ;
     ; yhead = cos(gamma) * sin(alpha) * cos(beta) + sin(gamma) * sin(beta);
     ; 
 
-        ;move.w  a5, d0
-        ;muls        d3, d0
-        ;moveq   #14, d2
-        ;asr.l   d2, d0
-    move    gamma_cos,yhead
-    imult   alpha_sin,yhead
-    sharq   #14,yhead
-
-        ;muls        d7, d0
-    imult   beta_cos,yhead  ; 32-bit
-
-        ;move.w  d5, d1
-        ;muls        d4, d1
+    ; yhead = gamma_cos
+    ;move    gamma_cos,yhead
     move    gamma_sin,temp1
-    imult   beta_sin,temp1  ; 32-bit
 
-        ;add.l   d1, d0
-        ;moveq   #14, d2
-        ;asr.l   d2, d0
-        ;move.w  d0, 10(a1)
+    ; cos(gamma) * sin(alpha)
+    ; zdown = sin(alpha)
+    imult   zdown,yhead
+    
+    ; sin(beta) * sin(gamma)
+    ; zrite = beta_sin
+    imult   zrite,temp1
+
+    sharq   #14,yhead
+                                        ;
+                                        ; zrite = sin(beta) * cos(alpha)
+                                        ;
+
+                                        ; zrite = beta_sin
+                                        ;move    beta_sin,zrite
+
+                                        ; sin(beta) * cos(alpha)
+                                        imult   alpha_cos,zrite
+    
+    ; cos(beta) * (cos(gamma) * sin(alpha))
+    ; zhead = beta_cos
+    imult   zhead,yhead
+                                        ; complete
+                                        sharq   #14,zrite       
+
+    ; (s(b) * s(g)) + (c(b) * c(g) * s(a))
     add     temp1,yhead
-    sharq   #14,yhead       ; complete
 
-    ;
-    ; zrite = sin(beta) * cos(alpha);
-    ; 
+                                        ;
+                                        ; zhead = cos(beta) * cos(alpha);
+                                        ;
 
-        ;move.w  d4, d0
-        ;muls        d6, d0
-        ;moveq   #14, d2
-        ;asr.l   d2, d0
-        ;move.w  d0, 12(a1)
-    move    beta_sin,zrite
-    imult   alpha_cos,zrite
-    sharq   #14,zrite       ; complete
-
+                                        ;move    beta_cos,zhead
+                                        ; cos(alpha) * cos(beta)
+                                        imult   alpha_cos,zhead
+    ; complete
+    sharq   #14,yhead
+                                        ; complete
+                                        sharq   #14,zhead
     ;
     ; zdown = -sin(alpha);
     ; 
 
-        ;move.w  d3, d0
-        ;neg.w   d0
-        ;move.w  d0, 14(a1)
-    move    alpha_sin,zdown
-    neg     zdown           ; complete
-
-        ; does this neg work correctly on a 16-bit value in a 32-bit register?
-
-        ; NOTE: this is the last time alpha_sin is used, so we could load
-        ;   the value directly into the zdown register to save a move
-
-    ;
-    ; zhead = cos(beta) * cos(alpha);
-    ; 
-
-        ;move.w  d7, d0
-        ;muls        d6, d0
-        ;moveq   #14, d2
-        ;asr.l   d2, d0
-        ;move.w  d0, 16(a1)
-    move    beta_cos,zhead
-    imult   alpha_cos,zhead
-    sharq   #14,zhead
-
-        ; NOTE: we could load either beta_cos or alpha_cos into zhead
+    ; complete
+    neg     zdown           
 
     ;
     ; TEST: Put the values we've calculated into test_returns in

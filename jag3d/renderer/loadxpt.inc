@@ -19,8 +19,9 @@
 ; Returns:
 ;	temp0 = clip codes for transformed point
 
-	.extern	_TLights		; lighting model
+	;.extern	_TLights		; lighting model -- THIS DOESN'T EXIST AND ISN'T REFERENCED ELSEWHERE
 
+; TODO: move these up into renderer.s (if they're ever changed)
 NUMCLIPPLANES = 5			; number of clipping planes
 lightscale = 4				; parameter for tweaking lighting (in-scene lights are darkened by 2^lightscale)
 
@@ -57,23 +58,31 @@ _loadxpoint:
 .endif
 	moveq	#12,temp1		; 12 == sizeof(point)
 	shrq	#16,temp2
+	
+	movei	#setxpoint,temp0 	; jump pointer
+	
 	mult	temp2,temp1		; temp1 = index*12
 	shlq	#4,temp2		; temp2 = index*16 (== sizeof(tpoint))
+		; stall
 	add		tpoints,temp2		; temp2 points to tpoints array entry
+		; stall
 	load	(temp2),basei		; load basei and clip code
-	addqt	#4,temp2
-	load	(temp2),x		; load transformed x 
-	addqt	#4,temp2
-	load	(temp2),y		; load transformed y
-	addqt	#4,temp2
-	load	(temp2),z		; load z; leave temp2 pointing at tpoints+12
+
+	;addqt	#4,temp2
+	;load	(temp2),x		; load transformed x 
+	;addqt	#4,temp2
+	;load	(temp2),y		; load transformed y
+	;addqt	#4,temp2
+	;load	(temp2),z		; load z; leave temp2 pointing at tpoints+12
+
+		; stall
 	btst	#7,basei		; has this point been transformed yet?
-	movei	#setxpoint,temp0
+		; stall	
 	jump	EQ,(temp0)		; yes -- go set the Xpoint
 	nop
 
 ; TODO: Can we perform the check above once we have `basei`, so we aren't 
-;	loading in invalid data every time?
+;	loading in invalid data every time? -- DONE
 
 ;
 ; save the colori,texwidth,and texheight registers
@@ -95,11 +104,14 @@ _loadxpoint:
 ;
 ; here we have to transform the point, and do lighting calculations for it
 ;
-	add	points,temp1		; temp1 points to the (object space) coordinates
+	add		points,temp1	; temp1 points to the (object space) coordinates
+		; stall
 	load	(temp1),x		; load X and Y
 	addqt	#4,temp1
+		; stall
 	load	(temp1),z		; load Z and VX
 	addqt	#4,temp1
+		; stall
 	load	(temp1),vz		; load VY and VZ
 	move	x,y
 	rorq	#16,x			; get X into low word (keep Y in high word for later use)
@@ -117,11 +129,12 @@ _loadxpoint:
 	move	countr,basei		; get base intensity
 	shlq	#16,countr
 	shrq	#16,basei
-	shrq	#16,countr
+	shrq	#16,countr 			; TODO: and $ffff
+
 loopbr	.equr	clipcodes			; temporary re-use of register
 
 	move	PC,loopbr
-	addqt	#4,loopbr
+	addqt	#4,loopbr ; == .lightloop
 
 .lightloop:
 	subq	#1,countr		; any more lights left?
@@ -211,45 +224,55 @@ endlightloop:
 	shrq	#31,clipcodes		; bit 0 of clipcodes is 1 if vz < MINZ
 	move	vz,temp0
 	move	vz,temp1
-	add	vx,temp0
-	sub	vx,temp1
+	add		vx,temp0
+	sub		vx,temp1
 	shrq	#31,temp0		; bit 0 of temp0 is 1 if vz+vx < 0, i.e. vx > -vz
 	shrq	#31,temp1		; bit 0 of temp1 is 1 if vz-vx < 0, i.e. vx < vz
 	shlq	#1,temp0
 	shlq	#2,temp1
-	or	temp0,clipcodes
-	or	temp1,clipcodes
+	or		temp0,clipcodes
+	or		temp1,clipcodes
 
 	move	vz,temp0
 	move	vz,temp1
-	add	vy,temp0
-	sub	vy,temp1
+	add		vy,temp0
+	sub		vy,temp1
 	shrq	#31,temp0		; bit 0 of temp0 is 1 if vz+vy < 0, i.e. vy > -vz
 	shrq	#31,temp1		; bit 0 of temp1 is 1 if vz-vy < 0, i.e. vy > vz
 	shlq	#3,temp0
 	shlq	#4,temp1
-	or	temp0,clipcodes
+	or		temp0,clipcodes
 	shlq	#8,basei		; make room for clipcodes
-	or	temp1,clipcodes
-	subqt	#12,temp2		; temp2 still points at the end of the tpoints entry; make it point at the beginning
-	or	clipcodes,basei
+	or		temp1,clipcodes
+
+	; didn't load other values, so temp2 points to basei
+	;subqt	#12,temp2		; temp2 still points at the end of the tpoints entry; make it point at the beginning
+	
+		; stall
+	or		clipcodes,basei
+
 	; save the transformed point to the tpoints array
 	; the format is X Y Z I|clipcodes, where X,Y,Z are 32 bits, I is 16 bits, and clipcodes are 8 bit
 	; temp2 still points just past the appropriate entry
+
 	store	basei,(temp2)		; store intensity and clip codes
 	addqt	#4,temp2
+		; stall
 	store	vx,(temp2)		; store X back into tpoints array (DRAM)
 	addqt	#4,temp2
+		; stall
 	store	vy,(temp2)		; store Y
 	addqt	#4,temp2
+		; stall
 	store	vz,(temp2)		; store Z
 	move	vx,x
 	move	vy,y
 	move	vz,z
+
 ;
 ; restore colori, texwidth, and texheight
 ;
-	movefa	atemp0,xcolori
+	;movefa	atemp0,xcolori ; moved below
 .if TEXTURES
 	movefa	atemp1,xtexwidth
 	movefa	atemp2,xtexheight
@@ -263,15 +286,36 @@ endlightloop:
 	movefa	atemp1,temp1
 .endif
 
+	; jump the extra loading we inserted below
+
+	jr 		reallysetxpoint
+	movefa	atemp0,xcolori 		; from above
+	;nop
+
 setxpoint:
+
+	; load in additional points we haven't loaded yet
+
+	addqt	#4,temp2
+		; stall
+	load	(temp2),x		; load transformed x 
+	addqt	#4,temp2
+		; stall
+	load	(temp2),y		; load transformed y
+	addqt	#4,temp2
+		; stall
+	load	(temp2),z		; load z; leave temp2 pointing at tpoints+12
+
+reallysetxpoint:
+
 	store	x,(altpgon)		; store X to local (SRAM) copy of polygon
 	addqt	#4,altpgon
+	move	basei,clipcodes
 	store	y,(altpgon)		; store Y
 	addqt	#4,altpgon
+	shrq	#8,basei		; strip clipping codes from intensity
 	store	z,(altpgon)		; store Z
 	addqt	#4,altpgon
-	move	basei,clipcodes
-	shrq	#8,basei		; strip clipping codes from intensity
 	shlq	#24,clipcodes
 	mult	xcolori,basei		; multiply by polygon's intensity
 	shrq	#24,clipcodes

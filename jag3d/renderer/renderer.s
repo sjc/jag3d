@@ -35,15 +35,6 @@
 ; POLYSIDES
 ; Maximum number of polygon sides supported
 ;
-; MINZ
-; Minimum Z value not clipped (must be > 0)
-;
-; PERSP_SHIFT
-; adjustment for perspective effect; this is a power of 2
-; "2" is a good default; "0" produces very exaggerated
-; perspective; bigger numbers produce smaller perspective
-; effects
-;
 
 ; "Gouraud Only" (gourrend.s)
 ;WIREFRAME	=	0
@@ -51,16 +42,12 @@
 ;TEXTURES	=	0
 ;TEXSHADE	=	0
 ;POLYSIDES	=	4
-;MINZ		=	8
-;PERSP_SHIFT	=	2
 
 ; "Wire Frames" (wfrend.s)
 ;WIREFRAME	=	1
 ;PHRASEMODE	=	0
 ;TEXTURES	=	0
 ;POLYSIDES	=	3
-;MINZ		=	8
-;PERSP_SHIFT	=	2
 
 ; "Phrase Mode Gouraud" (gourphr.s)
 ;WIREFRAME	=	0
@@ -68,8 +55,6 @@
 ;TEXTURES	=	0
 ;TEXSHADE	=	0
 ;POLYSIDES	=	4
-;MINZ		=	8
-;PERSP_SHIFT	=	2
 
 ; "Unshaded Textures" (texrend.s)
 WIREFRAME	=	0
@@ -77,8 +62,6 @@ PHRASEMODE	=	0
 TEXTURES	=	1
 TEXSHADE	=	0
 POLYSIDES	=	4
-MINZ		=	8
-PERSP_SHIFT	=	2
 
 ; "Flat Shaded Textures" (flattex.s)
 ;WIREFRAME	=	0
@@ -86,8 +69,6 @@ PERSP_SHIFT	=	2
 ;TEXTURES	=	1
 ;TEXSHADE	=	1
 ;POLYSIDES	=	4
-;MINZ		=	8
-;PERSP_SHIFT	=	2
 
 ; "Gouraud Shaded Textures" (gstex.s)
 ; doesn't work well, buffer issue?
@@ -96,14 +77,28 @@ PERSP_SHIFT	=	2
 ;TEXTURES	=	1
 ;TEXSHADE	=	2
 ;POLYSIDES	=	4
-;MINZ		=	8
-;PERSP_SHIFT	=	2
+
 
 ;
 ; MAX_LIGHTS
 ; Maximum number of lights in a scene
 ;
 MAX_LIGHTS	=	6
+
+;
+; PERSP_SHIFT
+; adjustment for perspective effect; this is a power of 2
+; "2" is a good default; "0" produces very exaggerated
+; perspective; bigger numbers produce smaller perspective
+; effects
+;
+PERSP_SHIFT	=	2
+
+;
+; MINZ
+; Minimum Z value not clipped (must be > 0)
+;
+MINZ		=	8
 
 	.include 	'jaguar.inc'
 ;
@@ -119,16 +114,16 @@ SIZEOF_XPOINT	equ	24		; Xpoint size in bytes
 	.globl	_renderer_code
 	.data
 _renderer_code:
-	.dc.l	startblit,endblit-startblit
+	.dc.l	startblit, endblit-startblit ; location, length
 
 	.gpu
 
 	.include 	"globlreg.inc"
-.if WIREFRAME
-	.include	"trapregs.inc"
-.else
+;.if WIREFRAME
+;	.include	"trapregs.inc"
+;.else
 	.include	"polyregs.inc"
-.endif
+;.endif
 
 	.org	G_RAM
 
@@ -172,11 +167,15 @@ _renderer_objinit:
 ;
 	movefa	destaddr,temp0
 	movei	#A1_BASE,temp2
-	store	temp0,(temp2)
 	movefa	destflags,temp1
+	store	temp0,(temp2)
+
+	moveq 	#3,temp0 	;movei	#XADDINC,temp0
+	shlq 	#16,temp0 	; stalls, buts saves a word
+
 	addqt	#4,temp2
-	movei	#XADDINC,temp0
-	or	temp0,temp1
+	or		temp0,temp1
+		; stall
 	store	temp1,(temp2)
 .endif
 
@@ -205,7 +204,9 @@ skipface:
 ;******************************************************************
 ; here's where we render the polygon
 ;******************************************************************
+	
 	movei	#curmaterial,altpgon
+
 .if WIREFRAME = 1
 	.include "wfdraw.inc"
 .else
@@ -267,8 +268,9 @@ gpudone:
 ;
 ; the code expects the next 3 arrays to always remain in order
 	; 4x1 vector: camera's position in object space
+	; 4th element is always $4000, so we can pre-fill it here
 _GPUcampos:
-	.dcb.l	4,0
+	.dcb.l	4,$4000
 	; 4x3 matrix, 1 longword per entry
 _GPUM:
 	.dcb.l	12,0
@@ -296,6 +298,7 @@ gtpoints:
 	.dc.l	0		; local copy of "tpoints" variable
 materialtable:
 	.dc.l	0		; local copy of materials table
+
 aspectratio:
 	.dc.l 	0 		; copy of camera aspect ratio
 						; here just because the camscale code iterates backwards

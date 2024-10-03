@@ -47,12 +47,14 @@ texpoly:
 ;
 ; make sure the blitter is off
 ;
-	movefa	bcmd_ptr,temp0
-.bwait:
-	load	(temp0),temp1
-	btst	#0,temp1
-	jr	EQ,.bwait
-	nop
+; commented-out because the calling code will have done the same just before jumping here
+;
+;	movefa	bcmd_ptr,temp0
+;.bwait:
+;	load	(temp0),temp1
+;	btst	#0,temp1
+;	jr	EQ,.bwait
+;	nop
 
 ;
 ; set up the destination registers
@@ -107,8 +109,8 @@ texline1:
 	move	rightx,bcount
 	shrq	#16,atemp0
 	shrq	#16,bcount
-	sub	atemp0,bcount
-	or	atemp0,ay
+	sub		atemp0,bcount
+	or		atemp0,ay
 
 	cmpq	#1,bcount
 	movei	#texzerocount,atemp0
@@ -121,7 +123,7 @@ texline1:
 	moveq	#1,atemp1
 	shlq	#16,atemp0
 	shlq	#14,atemp1
-	div	atemp0,atemp1		; atemp1 will be a 14 bit signed fraction
+	div		atemp0,atemp1		; atemp1 will be a 14 bit signed fraction
 
 	bset	#16,bcount
 ;
@@ -129,26 +131,26 @@ texline1:
 ; divide is happening
 ;
 	move	leftv,atemp0
-	move	leftu,srcpix			; srcpix is integer parts of pixel values
+	move	leftu,srcpix		; srcpix is integer parts of pixel values
 	shrq	#16,atemp0
 	shrq	#16,srcpix			; low word of srcpix has integer part of leftu in it
 	shlq	#16,atemp0			; high word of atemp0 has integer part of leftv in it
 	move	leftu,srcfpix
-	or	atemp0,srcpix
+	or		atemp0,srcpix
 	shlq	#16,srcfpix			; now srcfpix has fractional part of leftu in high word
 	move	leftv,atemp0
 	shrq	#16,srcfpix
 	shlq	#16,atemp0
-	or	atemp0,srcfpix
+	or		atemp0,srcfpix
 
 ;
 ; calculate b_uinc and b_vinc
 ;
 	move	rightv,b_vinc
 	move	rightu,b_uinc
-	sub	leftv,b_vinc		; find delta V
-	sub	leftu,b_uinc		; find delta U
-	sharq	#10,b_vinc		; convert to 16 bit (assumes U,V are less than 512)
+	sub		leftv,b_vinc		; find delta V
+	sub		leftu,b_uinc		; find delta U
+	sharq	#10,b_vinc			; convert to 16 bit (assumes U,V are less than 512)
 	sharq	#10,b_uinc
 	imult	atemp1,b_vinc		; multiply by 1/linelen
 	imult	atemp1,b_uinc

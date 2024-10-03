@@ -75,15 +75,15 @@ fracpoint:
 	addqt	#4,A
 	addqt	#4,B
 	move	temp0,temp2
-	sub	temp1,temp0		; temp0 contains the difference A-B (integer part)
-	sub	temp1,temp2		; temp2 contains the difference A-B (fractional part)
+	sub		temp1,temp0		; temp0 contains the difference A-B (integer part)
+	sub		temp1,temp2		; temp2 contains the difference A-B (fractional part)
 	sharq	#16,temp0		; put integer part in temp0
 	mult	frac,temp2		; multiply both integer and fractional parts
 	imult	frac,temp0
 	shrq	#15,temp2		; the fractional part needs to be divided by 15 bits
 	shlq	#1,temp0		; adjust integer part (because fraction was only 15 bits)
-	add	temp2,temp1
-	add	temp0,temp1
+	add		temp2,temp1
+	add		temp0,temp1
 	store	temp1,(OUT)
 	addqt	#4,OUT
 
@@ -118,7 +118,7 @@ clip_to_plane:
 	load	(pgon),vertsrem			; get number of vertices in polygon
 	addqt	#4,B
 	mult	vertsrem,A
-	add	B,A
+	add		B,A
 	subqt	#SIZEOF_XPOINT,A		; A = &pgon->pt[vertsrem-1]
 	move	altpgon,OUT
 	addqt	#4,OUT				; OUT = &altpgon->pt[0]
@@ -272,21 +272,23 @@ clip_to_plane:
 	jump	(return)			; return to caller
 	move	temp0,pgon
 
-.equrundef	A
-.equrundef	B
-.equrundef	OUT
-.equrundef	distA
-.equrundef	distB
-.equrundef	frac
-.equrundef	outrloop
-.equrundef	cereturn
-.equrundef	countr
-.equrundef	braddr
-.equrundef	planex
-.equrundef	planey
-.equrundef	planez
-.equrundef	planed
-.equrundef	numpoints
-.equrundef	vertsrem
-.equrundef	brfpoint
-.equrundef	half
+	.equrundef	A
+	.equrundef	B
+	.equrundef	OUT
+	.equrundef	distA
+	.equrundef	distB
+	.equrundef	frac
+	.equrundef	outrloop
+	.equrundef	cereturn
+	.equrundef	countr
+	.equrundef	braddr
+	.equrundef	planex
+	.equrundef	planey
+	.equrundef	planez
+	.equrundef	planed
+	.equrundef	numpoints
+	.equrundef	vertsrem
+	.equrundef	brfpoint
+	.equrundef	half
+
+	.equrundef	thisplane

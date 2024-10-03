@@ -14,7 +14,7 @@ material	.equr	r10
 
 	movei	#G_MTXA,g_mtxa
 	movei	#_GPUcampos,campos
-	moveta	g_mtxa,altgmtxa
+	moveta	g_mtxa,altgmtxa  	; TODO: can we set this up in a global during init()?
 	movei	#endtriloop,endloop
 
 bfcull:
@@ -25,10 +25,10 @@ bfcull:
 	; to re-load the registers above
 	subq	#1,tricount
 
-	; set matrix address
+	; (re)set matrix address
 	store	campos,(g_mtxa)
 
-	jump	MI,(endloop)
+	jump	MI,(endloop) 	; all done
 	nop
 
 ;
@@ -48,10 +48,10 @@ bfcull:
 	cmpq	#1,temp2			; if positive, we have to display this triangle
 	jr	PL,.noremove
 	nop
-		shlq	#8,material		; strip flags
+		shlq	#8,material			; strip flags
 		shrq	#22,material		; now material = number of points in polygon, times 4
 		jump	(bfculladdr)
-		add	material,tri		; skip 3 points (4 byte each)
+		add		material,tri		; skip 3 points (4 byte each)
 .noremove:
 
 .if (^^defined PROFILING)
@@ -76,11 +76,12 @@ xtexheight	.equr	r9,1		; texture height
 	load	(temp1),temp1		; load address of material table
 	shrq	#13,material		; and multiply material by 8 (== sizeof(Material))
 	shlq	#8,subr			; strip flags from count
-	add	material,temp1		; now temp1 points at the material
+	add		material,temp1		; now temp1 points at the material
 	shrq	#24,subr		; and make count an integer
 	load	(temp1),xcolori		; get color (high word) and flags
 	addqt	#4,temp1
 	load	(temp1),temp1		; now temp1 points at a texture map
+
 .equrundef	material
 
 ; save the texture map and color
@@ -146,7 +147,9 @@ endloop		.equr	r22,1		; end of lighting calculation loop
 	move	PC,return
 	moveq	#0,orclips
 	addqt	#6,return
+
 .pointlp:
+
 	addqt	#4,tri
 
 	.include	"loadxpt.inc"

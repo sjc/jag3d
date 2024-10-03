@@ -22,12 +22,12 @@
 ; bz3_ptr
 ; bcmd_ptr
 
-start		.equr	pgon		; pointer to first point in polygon
+start	.equr	pgon		; pointer to first point in polygon
 end		.equr	orclips		; pointer to last point in polygon
-left		.equr	andclips	; pointer to left side point (end point of line)
-right		.equr	altpgon		; pointer to right side point (start point of line)
+left	.equr	andclips	; pointer to left side point (end point of line)
+right	.equr	altpgon		; pointer to right side point (start point of line)
 
-color		.equr	r4,1		; color for this polygon
+color	.equr	r4,1		; color for this polygon
 sx		.equr	r5,1		; start X coordinate for a line
 sy		.equr	r6,1		; start Y coordinate for line
 ex		.equr	r7,1		; end X coordinate (converted to X increment)
@@ -44,8 +44,8 @@ inc_val		.equr	r17,1		; value for A1_INC
 finc_val	.equr	r18,1		; value for A1_FINC
 outrloop	.equr	r19,1		; outer loop address
 
-	.globl	drawpoly
-drawpoly:
+;	.globl	drawpoly
+;drawpoly:
 
 	movefa	bcmd_ptr,bcmd_addr
 	movefa	a1_ptr,a1pix_addr
@@ -53,22 +53,28 @@ drawpoly:
 	movei	#A1_FPIXEL,a1fpix_addr
 	movei	#A1_INC,a1inc_addr
 	movei	#A1_FINC,a1finc_addr
-	movei	#PATDSEL,bcmd_val
+	
+	;movei	#PATDSEL,bcmd_val ; = 0x00010000
+	moveq 	#1,bcmd_val
+	shlq 	#16,bcmd_val
+
 ;*
 ; set up the color and texture; "altpgon" points at the material for the
 ; polygon
 ;*
-	load	(altpgon),color				; get color & intensity (high word) and flags (low word)
+	load	(altpgon),color			; get color & intensity (high word) and flags (low word)
 	shrq	#16,color				; isolate color
 
 ;
 ; set up the blitter
 ;
-.bwait1:
-	load	(bcmd_addr),temp0
-	btst	#0,temp0
-	jr	EQ,.bwait1
-	nop
+; commented-out because the calling code will have done the same just before jumping here
+;
+;.bwait1:
+;	load	(bcmd_addr),temp0
+;	btst	#0,temp0
+;	jr	EQ,.bwait1
+;	nop
 
 	movei	#B_PATD,temp2
 	store	color,(temp2)
@@ -104,28 +110,44 @@ polyloop:
 	subqt	#4,right
 	subqt	#4,left
 
-	shrq	#16,sx			; strip fractional parts of X
-	shrq	#16,ex
-	shlq	#16,sx
-	shlq	#16,ex
-	shrq	#16,sy			; strip fractional parts of Y
-	shrq	#16,ey
-	shlq	#16,sy
-	shlq	#16,ey
+	movei 	#$FFFF0000,temp1
+
+	;shrq	#16,sx			; strip fractional parts of X
+	;shrq	#16,ex
+	;shlq	#16,sx
+	;shlq	#16,ex
+	;shrq	#16,sy			; strip fractional parts of Y
+	;shrq	#16,ey
+	;shlq	#16,sy
+	;shlq	#16,ey
+
+	and 	temp1,sx
+	and 	temp1,ex
+	and 	temp1,sy
+	and 	temp1,ey
+
 	sub	sx,ex			; convert ex and ey to delta x and delta y
 	sub	sy,ey
 	move	ex,temp0
 	move	ey,linelen
 	abs	temp0
 	abs	linelen
+		; stall
 	add	temp0,linelen
-	shrq	#16,linelen
-	shlq	#16,linelen
+		; stall
+
+	;shrq	#16,linelen
+	;shlq	#16,linelen
+	and 	temp1,linelen
+
 	; convert ex and ey to delta x and delta y
-	abs	ey
+	abs	ey 			; cannot move because it sets flags
+		; stall
 	jr	CC,.posy
+		; how does this work? div happens even if we jr?
 	div	linelen,ey
 	; while the divide is happening, convert sy to have y in the high word, x in the low
+		; i don't think that's how it works...
 		shrq	#16,sx
 		or	sx,sy
 		jr	.doney
@@ -141,20 +163,29 @@ polyloop:
 	jr	CC,.posx
 	div	linelen,ex
 		move	ey,finc_val
-		shrq	#16,inc_val
-		shlq	#16,finc_val
-		shlq	#16,inc_val
+
+		and 	temp1,inc_val
+
+		;shrq	#16,inc_val
+		;shlq	#16,finc_val
+		;shlq	#16,inc_val
+		
 		shrq	#16,linelen
+		shlq	#16,finc_val ; from above
 		bset	#16,linelen
 		jr	.donex
 		neg	ex
 .posx:
 	move	ey,finc_val
-	shrq	#16,inc_val
-	shlq	#16,finc_val
-	shlq	#16,inc_val
+
+	and 	temp1,inc_val
+
+	;shrq	#16,inc_val
+	;shlq	#16,finc_val
+	;shlq	#16,inc_val
 
 	shrq	#16,linelen
+	shlq	#16,finc_val ; from above
 	bset	#16,linelen
 .donex:
 	move	ex,temp0
@@ -182,7 +213,7 @@ polyloop:
 
 	move	left,right
 	addqt	#SIZEOF_XPOINT,left
-	cmp	left,end
+	cmp		left,end
 	jump	NE,(outrloop)
 	nop
 

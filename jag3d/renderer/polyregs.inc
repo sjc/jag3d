@@ -25,7 +25,7 @@ rightv		.equr	r14,0
 
 bcmdval		.equr	r15,0		; value for B_CMD
 bcount		.equr	r16,0		; value for bcount
-ay		.equr	r17,0		; Y value
+ay		    .equr	r17,0		; Y value
 anumlines 	.equr	r18,0		; number of lines to draw
 
 destflags	.equr	r19,0		; blitter flags for destination bitmap

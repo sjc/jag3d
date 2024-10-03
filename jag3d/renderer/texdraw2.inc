@@ -58,12 +58,14 @@ texpoly:
 ;
 ; make sure the blitter is off
 ;
-	movefa	bcmd_ptr,temp0
-.bwait:
-	load	(temp0),temp1
-	btst	#0,temp1
-	jr	EQ,.bwait
-	nop
+; commented-out because the calling code will have done the same just before jumping here
+;
+;	movefa	bcmd_ptr,temp0
+;.bwait:
+;	load	(temp0),temp1
+;	btst	#0,temp1
+;	jr	EQ,.bwait
+;	nop
 
 ;
 ; set up the destination registers
@@ -120,7 +122,7 @@ texline1:
 	moveq	#1,atemp1
 	shlq	#16,atemp0
 	shlq	#14,atemp1
-	div	atemp0,atemp1		; atemp1 will be a 14 bit signed fraction
+	div		atemp0,atemp1		; atemp1 will be a 14 bit signed fraction
 
 	bset	#16,bcount
 ;

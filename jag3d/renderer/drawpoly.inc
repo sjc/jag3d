@@ -27,7 +27,7 @@ NEWPOLY	=	1
 FUDGE	=	7
 
 start		.equr	pgon		; pointer to first point in polygon
-end		.equr	r4,1		; pointer to last point in polygon
+end			.equr	r4,1		; pointer to last point in polygon
 vertsrem	.equr	r5,1		; number of vertices remaining in polygon
 left		.equr	r6,1		; pointer to left side point
 right		.equr	r7,1		; pointer to right side point
@@ -40,8 +40,8 @@ ry		.equr	r10,1		; right Y value
 tmap		.equr	r12,1		; pointer to texture map
 color		.equr	r13,1		; color for this polygon
 
-	.globl	drawpoly
-drawpoly:
+;	.globl	drawpoly
+;drawpoly:
 ;*
 ; set up the color and texture; "altpgon" points at the material for the
 ; polygon
@@ -49,7 +49,6 @@ drawpoly:
 	load	(altpgon),color				; get color & intensity (high word) and flags (low word)
 .if TEXTURES
 	addqt	#4,altpgon
-
 ;
 ; get the texture map info
 ;
@@ -57,11 +56,14 @@ drawpoly:
 .endif ; TEXTURES
 
 	shrq	#24,color				; isolate color
+		; stall
 	shlq	#8,color
+		; stall
 	move	color,temp0				; duplicate color into a long
 	shlq	#16,color
-	or	temp0,color
-
+		; stall
+	or		temp0,color
+		; stall
 	moveta	color,b_color
 
 ;
@@ -73,8 +75,8 @@ drawpoly:
 	cmpq	#0,tmap
 	jr	EQ,.funcsok
 	nop
-		movei	#textrap,temp0
-		movei	#texpoly,temp1
+		movei	#textrap,temp0 ; POLYdraw
+		movei	#texpoly,temp1 ; POLYinit -- wait for blitter
 .funcsok:
 .endif
 	moveta	temp0,atemp0		; save per-trapezoid function in atemp0
@@ -86,7 +88,8 @@ drawpoly:
 	moveq	#SIZEOF_XPOINT,end			; adjust for size of points
 	addqt	#4,start				; start = &pgon->pt[0]
 	mult	vertsrem,end
-	add	start,end				; end = &pgon->pt[vertsrem]
+		; stall
+	add		start,end				; end = &pgon->pt[vertsrem]
 
 ;
 ; find the top vertex, and put it into "left"
@@ -111,10 +114,12 @@ drawpoly:
 	load	(right),temp0
 	addqt	#SIZEOF_XPOINT,right
 	sharq	#16,temp0				; set temp0 = right->y
-	cmp	y,temp0					; if y <= right->y
-	jr	PL,.forlp				; 	continue
+		; stall
+	cmp		y,temp0					; if y <= right->y
+	jr		PL,.forlp				; 	continue
 	nop
 	move	right,left
+		; stall
 	subqt	#SIZEOF_XPOINT,left
 	move	temp0,y
 	jr	.forlp
@@ -135,11 +140,15 @@ drawpoly:
 ;***********************************
 ; make sure the blitter is finished
 ;***********************************
-	movefa	bcmd_ptr,temp1
+
+; changed regs used, to match expectations of -poly subs we call from here
+
+	movefa	bcmd_ptr,temp0 	; was temp1
 .bwloop1:
-	load	(temp1),temp0	
-	btst	#0,temp0
-	jr	EQ,.bwloop1
+	load	(temp0),temp1	; was (temp1),temp0
+	btst	#0,temp1
+	jr		EQ,.bwloop1
+
 	movefa	atemp1,temp2		; retrieve address of per-polygon routine
 
 ;
@@ -174,8 +183,11 @@ innerloop	.equr	return		; inner loop branch address
 	moveta	temp0,leftz
 	moveta	temp1,lefti
 	moveta	temp0,rightz
-	moveta	temp1,righti
+	moveta	temp1,righti ; IS THIS CORRECT? was `rightz`, changed to `righti`
 .if TEXTURES
+
+	; TODO: check if this face has a texture
+
 	load	(left),temp0			; temp0 = left->u
 	addqt	#4,left
 	load	(left),temp1			; temp1 = left->v
@@ -214,19 +226,24 @@ polyloop:
 	nop
 		load	(right),temp0		; temp0 = current right->x	 (branch optimization)
 		addqt	#8,right
+		moveta	temp0,rightx
 		load	(right),temp1
 		addqt	#4,right
-		moveta	temp0,rightx
+		;moveta	temp0,rightx
 		moveta	temp1,rightz
 		load	(right),temp0		; temp0 = lefti
 		addqt	#4,right
 		moveta	temp0,righti
 .if TEXTURES
+
+		; TODO: check if this face has a texture
+
 		load	(right),temp0
 		addqt	#4,right
+		moveta	temp0,rightu
 		load	(right),temp1
 		addqt	#4,right
-		moveta	temp0,rightu
+		;moveta	temp0,rightu
 		moveta	temp1,rightv
 .else
 		addqt	#8,right
@@ -249,20 +266,20 @@ polyloop:
 ;
 		move	ry,temp0
 		movei	#(1<<24),numlines
-		sub	y,temp0			; temp0 = (ry - y)
+		sub		y,temp0				; temp0 = (ry - y)
 		jump	EQ,(innerloop)		; if (ry == y) repeat the loop
 		shlq	#16,temp0
 
 		addqt	#8,right		; move right to right->z
-		div	temp0,numlines
+		div		temp0,numlines
 
 		movefa	rightx,temp0
-		sub	temp0,nextval		; rightxstep = Fixdiv( nextval - rightx, numlines )
+		sub		temp0,nextval		; rightxstep = Fixdiv( nextval - rightx, numlines )
 
 		normi	numlines,nlnorm
 		addqt	#9,nlnorm		; make it a 15 bit fraction instead of 24 bit
-		sha	nlnorm,numlines
-		neg	nlnorm			; now nlnorm is an adjustment for multiplies
+		sha		nlnorm,numlines
+		neg		nlnorm			; now nlnorm is an adjustment for multiplies
 		addqt	#(24-16),nlnorm		; norm is a 24 bit fraction; but we will predivide nextval by 16
 
 		move	nextval,temp0		; temp0 = fractional part of nextval
@@ -270,8 +287,8 @@ polyloop:
 		mult	numlines,temp0
 		imult	numlines,nextval
 		shrq	#16,temp0
-		add	temp0,nextval		; now nextval is "numlines*nextval" >> 16
-		sha	nlnorm,nextval
+		add		temp0,nextval		; now nextval is "numlines*nextval" >> 16
+		sha		nlnorm,nextval
 
 		moveta	nextval,rightxstep
 
@@ -281,16 +298,16 @@ polyloop:
 		addqt	#4,right
 		load	(right),temp2		; temp2 = right->i
 		addqt	#4,right
-		sub	temp0,nextval
-		sub	temp1,temp2
+		sub		temp0,nextval
+		sub		temp1,temp2
 
 		move	nextval,temp0		; temp0 = fractional part of nextval
 		sharq	#16,nextval		; make nextval an integer
 		mult	numlines,temp0
 		imult	numlines,nextval
 		shrq	#16,temp0
-		add	temp0,nextval		; now nextval is "numlines*nextval" >> 16
-		sha	nlnorm,nextval
+		add		temp0,nextval		; now nextval is "numlines*nextval" >> 16
+		sha		nlnorm,nextval
 
 		move	nextval,rightzstep
 
@@ -306,11 +323,15 @@ polyloop:
 		move	nextval,rightistep
 
 .if TEXTURES
+
+		; TODO: check if this face has a texture
+
 		load	(right),nextval		; nextval = right->u
 		addqt	#4,right
+		movefa	rightu,temp0 ; from below
 		load	(right),temp2		; temp2 = right->v
 		subqt	#20,right
-		movefa	rightu,temp0
+		;movefa	rightu,temp0
 		movefa	rightv,temp1
 		sub	temp0,nextval		; now nextval = nextright->u - curright->u
 		sub	temp1,temp2		; and temp2 = nextright->v - curright->v
@@ -354,8 +375,7 @@ doneright:
 	jump	MI,(temp2)			; temp2 still contains "doneleft"
 	nop
 		load	(left),temp0		; temp0 = left->x		
-		addqt	#8,left			; skip X and Y
-
+		addqt	#8,left				; skip X and Y
 		moveta	temp0,leftx
 		load	(left),temp0		; temp0 = leftz
 		addqt	#4,left
@@ -456,6 +476,9 @@ doneright:
 
 
 .if TEXTURES
+
+		; TODO: check if this face has textures
+
 		load	(left),nextval		; nextval = left->u
 		addqt	#4,left
 		load	(left),temp2		; temp2 = left->v
@@ -510,10 +533,10 @@ doneleft:
 ; switch to bank 0
 ;
 	movei	#G_FLAGS,temp1
-	add	numlines,y		; update value of Y
+	add		numlines,y			; update value of Y
 	load	(temp1),temp0		; get G_FLAGS register
-	movei	#polyloop,return		; when we return from gourtrap, we should go back to the start of the loop
-	bclr	#14,temp0		; set bank flag to 0
+	movei	#polyloop,return	; when we return from gourtrap, we should go back to the start of the loop
+	bclr	#14,temp0			; set bank flag to 0
 	jump	(trapfunc)
 	store	temp0,(temp1)		; switch banks during the jump
 
