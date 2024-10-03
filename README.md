@@ -13,12 +13,13 @@ This is a modified version of Atari's 3D demo for the Jaguar. Specifically, it i
 - Refactored the renderer
     - Interface changed to better suit use in a game
         - Load into GPU memory and init once
-        - One entry point to init shared data once per frame
+        - One entry point to init shared data (image buffer, camera matrix) once per frame
         - Second entry point to draw each object, to allow multiple calls with minimum re-setup
     - Moved object matrix calculation code to the GPU (replacing 68k `mkMatrix()`)
     - Consolidated all example renderers into a single file
         - Renderer type chosen at compile time
         - The assumption is that a project will choose one type of renderer to use
+            - Support for multiple renders within one project is possible
     - Drawing code is unchanged, because I don't understand that stuff
 
 ## Building
@@ -31,7 +32,7 @@ The 3D demo will not run on [Virtual Jaguar](https://icculus.org/virtualjaguar/)
 
 The demo will run with [the BigPEmu](https://www.richwhitehouse.com/jaguar/) emulator. This can be used along with the [Neosis](https://richwhitehouse.com/index.php?content=inc_projects.php&showproject=91) debugger.
 
-I have not yet tested this code on a genuine Jaguar.
+This code has been tested on genuine Jaguar hardware and found to work just fine.
 
 ## Models
 
@@ -43,35 +44,55 @@ Models converted from `.3ds` files will be exposed in the code with the symbol `
 
 A directory can contain multiple model files.
 
-## Objects
+## Data Types
 
-Instances of models are represented by `N3DObject` structures. The `.data` member should point to a model data struct (`N3DObjdata`). The `angles` member contains the position (`xpos`, `ypos`, `zpos`) and rotation around each axis (`alpha` `beta` and `gamma` for x, y and z axis) of the object, and are used for transforming the object within the scene.
+The interface to the library (described below) requires two pieces of information to represent the model to be rendered: the model data (`N3DObjdata`, described above) and a `Transform`.
 
-The camera's position and rotation are represented by an instance of the `Angles` struct.
+The `Transform` contains the position (`xpos`, `ypos`, `zpos`) and rotation around each axis (`alpha` `beta` and `gamma` for x, y and z axis) of the object in world space.
 
-The `Angles` struct also contains the sine and cosine values for each rotation angle. If a rotation angle has changed, before passing the camera or an object to the renderer, these values should be updated using the `UpdateAngles()` function. This is not necessary if only the position has updated.
+The camera's position and rotation are also represented by an instance of `Transform`.
+
+The `Transform` struct also contains the sine and cosine values for each rotation angle. If a rotation angle has changed, before passing the camera or an object to the renderer, these values should be updated using the `UpdateAngles()` function. This is not necessary if only the position has been updated, as long as `UpdateAngles()` has been called on the `Transform` at least once in the past.
+
+The included demo code uses a `N3DObject` to encapsulate these data types. This is for historical reasons. You will probably find it easier to define your own data structure. Besides the model data and the transform, none of the members of `N3DObject` are used by the renderer.
 
 ## Lights
 
 TODO
 
-## Rendering
+## Renderers
 
 The type of renderer to use should be chosen by un-commenting the appropriate block of defines in the `jag3d/renderer/renderer.s` file. (TODO: Make this not suck.) All 6 example renderers from Atari's demo are available.
 
 If the "Gouraud Shaded Textures" version is used, the `FixModelTextures()` function should be run on each of your models. (NOTE: This renderer doesn't run well at the moment, probably due to lack of buffer memory in the GPU. This should improve in the future.)
 
-Load the renderer into GPU memory with `LoadAndInitRenderer()`. For the default renderer build, pass `renderer_code` as the first parameter and `renderer_init` as the second. If you are not using the GPU for anything else, this can be done once eg. before entering your main game loop. Once the init code has been run it is no longer needed and the space it uses if freed-up for use by the renderer.
+## Setup and Rendering
 
-At the start of each frame, after swapping the screen buffers and making any updates to the camera's position and orientation, call `SetupFrame()`. This sets up values used by all subsequent objects. For the default renderer, pass `renderer_frameinit` as parameter.
+Load the renderer into GPU memory with `LoadAndInitRenderer()`. This takes no parameters and will load and initialise the default renderer, built from `renderer.s`. 
 
-Each object is rendered to the current buffer using `RenderObject()`. For the default renderer, pass `renderer_objinit` as parameter. `tpoints` should point to scratch memory which the GPU will use for transformed points. It should have enough room for `sizeof(TPoint)` bytes for each point in your largest model. (See example code for pre-allocating a buffer.)
+If you are not using the GPU for anything else, you can be load and initialise the rendering code once eg. before entering your main game loop. Once the init code has been run it is no longer needed and the space it occupied if freed-up for use by the renderer.
+
+At the start of each frame, after swapping the screen buffers and making any updates to the camera's position and orientation, call `SetupFrame()`. This sets up the camera matrix used by all subsequent calls to the object rendering function.
+
+Each object is rendered to the current buffer using `RenderObject()`. This takes as parameters:
+
+    * A pointer to the model data 'N3DObjdata`
+    * A pointer to the object `Transform`
+    * A pointer to the lights struct
+    * A pointer to scratch memory which the GPU will use for transformed points. It should have enough room for `sizeof(TPoint)` bytes for each point in your largest model. (See example code for pre-allocating a buffer.)
+
+*Note:* Since the GPU will be reading data from (and in the case of the scratch memory, writing data to) each of the areas of memory these pointers point to, it is essential to have them aligned on longword (4 byte) boundaries. The best approach for this would be to allocate them in an assembly language file's `.bss` section with `.long` alignment. Next best is the approach shown in the demo code, where `malloc()` is used to request a buffer slightly larger than required, the address of which is then aligned.
 
 (TODO: It should be possible, if using one of the smaller renderers and models with a small number of points, to have `tpoints` reference an area of GPU memory. This needs testing.)
+
+## Multiple Renderers
+
+Multiple renderers should be possible by duplicating the main `renderer.s` file, renaming the exposed symbols (`renderer_code`, `renderer_init`, `renderer_frameinit` and `renderer_objinit`) and using the `…Custom()` versions of the functions described above. This has not yet been tested. It will be documented once it has.
 
 ## TODO
 
 - Fix issue where wireframe renderer draws a line across top and bottom of the screen
 - Optomise GPU code, particularly with respect to instruction order
-- Investigate using GPU memory as scratch space for low-point models
-
+- Investigate using GPU memory or CLUT as scratch space for low-point models
+- Move bitmap clearing blitter code into `frameinit`
+- Move sin and cos lookup code onto the GPU

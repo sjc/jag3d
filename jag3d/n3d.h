@@ -12,6 +12,8 @@
 typedef struct light {
 	short	x,y,z;		/* light position, for in scene, or normal vector for sunlight */
 	unsigned short bright;		/* base intensity, for in scene, or 0 for sunlight */
+		// "sunlight vectors have bit 15 clear" (objinit.inc #331)
+		// in 0.14 format, eg. 0x4000 => in-scene light
 } Light;
 
 /*
@@ -162,7 +164,7 @@ typedef union animation {
  * position of an object
  */
 
-typedef struct angles {
+typedef struct transform {
 	/* use addTrigs() or ??? to set these. */
 	short alpha_sin, alpha_cos;
 	short beta_sin, beta_cos;
@@ -170,7 +172,7 @@ typedef struct angles {
 
 	short xpos, ypos, zpos;		/* position */
 	short alpha, beta, gamma;		/* rotations */
-} Angles;
+} Transform;
 
 /* finally, an object: a transformation matrix, pointer to object data, plus
  * whatever else we eventually decide to include.
@@ -178,7 +180,7 @@ typedef struct angles {
 
 typedef struct object {
 	N3DObjdata	*data;
-	Angles angles;
+	Transform transform;
 	struct object *siblings;	/* pointer to object tree members at same level */
 	struct object *children;	/* pointer to lower level objects */
 	Animation *animation;

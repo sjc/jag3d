@@ -190,7 +190,7 @@ main()
 	int i, temp;
 	int drawbuf;				/* flag: 0 means first buffer, 1 means second */
 	Bitmap *curwindow;		/* pointer to output bitmap */
-	Angles camangles; 		/* camera position and rotation */
+	Transform *camangles; 	/* camera position and rotation */
 	long buts, shotbuts;		/* joystick buttons pushed */
 	long curframe;				/* current frame counter */
 	long framespersecond;	/* frames per second counter */
@@ -198,7 +198,7 @@ main()
 	
 	char buf[256];			/* scratch buffer for sprintf */
 
-	N3DObject objects[OBJCOUNT]; 	/* objects which will be drawn each frame */
+	N3DObject *objects; 	/* objects which will be drawn each frame */
 	TPoint *tpoints; 					/* scratch space for GPU point transforms */
 
 	/* build packed versions of the two object lists */
@@ -218,19 +218,23 @@ main()
 
 	drawbuf = 0;			/* draw on buffer 1, while displaying buffer 2 */
 
+	objects = (void *)((long)malloc(OBJCOUNT * sizeof(N3DObject) + 3) & 0xFFFFFFFC);
+
 	/* initialize the test objects */
 	for (i = 0; i < OBJCOUNT; i++) {
 		memset(&objects[i], 0, sizeof(N3DObject));
 		objects[i].data = models[i].data;
-		objects[i].angles.xpos = models[i].initx;
-		objects[i].angles.ypos = models[i].inity;
-		objects[i].angles.zpos = models[i].initz;
+		objects[i].transform.xpos = models[i].initx;
+		objects[i].transform.ypos = models[i].inity;
+		objects[i].transform.zpos = models[i].initz;
 	}
 
+	camangles = (void *)((long)malloc(sizeof(Transform) + 3) & 0xFFFFFFFC);
+
 	/* set up the viewer's position */
-	camangles.alpha = camangles.gamma = 0;
-	camangles.beta = 256;
-	camangles.xpos = camangles.ypos = camangles.zpos = 0;
+	camangles->alpha = camangles->gamma = 0;
+	camangles->beta = 256;
+	camangles->xpos = camangles->ypos = camangles->zpos = 0;
 
 	/* initialize timing information */
 	curframe = _timestamp;			/* timestamp is updated every vblank, and is elapsed time in 300ths of a second */
@@ -249,30 +253,25 @@ main()
 	}
 
 	/* allocate temporary storage for the GPU to transform points */
-   tpoints = malloc(temp * sizeof(TPoint));
+   tpoints = (void *)((long)malloc(temp * sizeof(TPoint) + 3) & 0xFFFFFFFC);
 
 	/* load the renderer into GPU memory */
-	LoadAndInitRenderer(renderer_code, renderer_init);
+	LoadAndInitRenderer();
 
 	/* loop forever */
 	for(;;) {
 		/* select bitmap for drawing */
 		curwindow = (drawbuf) ? &scrn2 : &scrn1;
 
-		/* update objects, looking-up sin and cos for current rotations */
-		for (i = 0; i < OBJCOUNT; i++) {
-			UpdateAngles(&objects[i].angles);
-		}
-
 		/* update camera, looking-up sin and cos for current rotations */
-		UpdateAngles(&camangles);
+		UpdateAngles(camangles);
 
 		/* clear the current draw buffer */
 		/* TODO: this could be moved to the GPU, as part of frameinit() */
 		ClearBuffer(curwindow);
 
 		/* setup the shared rendering state for this frame */
-		SetupFrame(renderer_frameinit, curwindow, &camangles);
+		SetupFrame(curwindow, camangles);
 
 		/* now draw the objects, timing how long it takes */
 		/* NOTE: the clock() function uses unsupported hardware
@@ -284,7 +283,9 @@ main()
 		time = clock();
 		
 		for (i = 0; i < OBJCOUNT; i++) {
-			RenderObject(renderer_objinit, &objects[i], &lightm, tpoints);
+			/* update objects, looking-up sin and cos for current rotations */
+			UpdateAngles(&objects[i].transform);
+			RenderObject(objects[i].data, &objects[i].transform, &lightm, tpoints);
 		}
 
 		time = clock() - time;
@@ -311,21 +312,20 @@ main()
 
 		// left/right rotates the camera around the y axis
 		if (buts & JOY_LEFT) {
-			camangles.beta -= 4;
+			camangles->beta -= 4;
 		} else if (buts & JOY_RIGHT) {
-			camangles.beta += 4;
+			camangles->beta += 4;
 		}
 
 		// up/down raises or lowers the camera
 		if (buts & JOY_UP) {
-			camangles.ypos -= 4;
-			camangles.alpha -= 2;
+			camangles->ypos -= 4;
+			camangles->alpha -= 2;
 		} else if (buts & JOY_DOWN) {
-			camangles.ypos += 4;
-			camangles.alpha += 2;
+			camangles->ypos += 4;
+			camangles->alpha += 2;
 		}
-		
-
+	
 		/* display the buffer we just drew */
 		OLPset(drawbuf ? packed_olist2 : packed_olist1);
 

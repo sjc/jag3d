@@ -6,7 +6,11 @@
 #include "jag3d.h"
 #include "blit.h"
 
-// extern void mkMatrix(Matrix *, struct angles *); /* builds a matrix */
+/* start and entry points for the default renderer */
+extern long renderer_code[];
+extern long renderer_init[];
+extern long renderer_frameinit[];
+extern long renderer_objinit[];
 
 /* from lib/gpulib.s */
 extern void GPUload(void *);    /* loads a package into the GPU */
@@ -25,34 +29,49 @@ extern long params[];
 ;
 
 void
-LoadAndInitRenderer(long *gpucode, void *gpufunc)
+LoadAndInitRendererCustom(long *gpucode, void *gpufunc)
 {
     GPUload(gpucode);
 
     // TODO: calculate the space left in GPU memory, so we could
-    //  potentially use it as the triangle scratch space
+    //  potentially use it as the triangle scratch space?
 
     GPUrun(gpufunc);
 }
 
 void
-SetupFrame(void *gpufunc, Bitmap *window, struct angles *camangles)
+LoadAndInitRenderer() {
+    LoadAndInitRendererCustom(renderer_code, renderer_init);
+}
+
+void
+SetupFrameCustom(void *gpufunc, Bitmap *window, Transform *camtrans)
 {
     params[0] = (long)window;
-    params[1] = (long)camangles;
+    params[1] = (long)camtrans;
 
     GPUrun(gpufunc);
 }
 
 void
-RenderObject(void *gpufunc, N3DObject *obj, Lightmodel *lmodel, TPoint *tpoints)
+SetupFrame(Bitmap *window, Transform *camtrans) {
+    SetupFrameCustom(renderer_frameinit, window, camtrans);
+}
+
+void
+RenderObjectCustom(void *gpufunc, N3DObjdata *data, Transform *trans, Lightmodel *lmodel, TPoint *tpoints)
 {
-    params[0] = (long)obj->data;
-    params[1] = (long)&obj->angles;
+    params[0] = (long)data;
+    params[1] = (long)trans;
     params[2] = (long)lmodel;
     params[3] = (long)tpoints;
 
     GPUrun(gpufunc);
+}
+
+void
+RenderObject(N3DObjdata *data, Transform *trans, Lightmodel *lmodel, TPoint *tpoints) {
+    RenderObjectCustom(renderer_objinit, data, trans, lmodel, tpoints);
 }
 
 /****************************************************************

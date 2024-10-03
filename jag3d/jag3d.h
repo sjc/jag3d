@@ -2,6 +2,9 @@
 // jag3d.h
 //
 
+#ifndef JAG3D_H
+#define JAG3D_H
+
 #include "n3d.h"
 #include "n3dintern.h"
 
@@ -9,16 +12,25 @@
  * The object renderer
  */
 
-// start and entry points for the renderer
-extern long renderer_code[];
-extern long renderer_init[];
-extern long renderer_frameinit[];
-extern long renderer_objinit[];
+//
+// functions using default renderer built from jag3d/renderer/renderer.s
+//
+void LoadAndInitRenderer(void);
+void SetupFrame(Bitmap *window, Transform *camtrans);
+void RenderObject(N3DObjdata *data, Transform *trans, Lightmodel *lmodel, TPoint *tpoints);
 
-void LoadAndInitRenderer(long *gpucode, void *gpufunc);
-void SetupFrame(void *gpufunc, Bitmap *window, Angles *camangles);
-void RenderObject(void *gpufunc, N3DObject *obj, Lightmodel *lmodel, TPoint *tpoints);
+//
+// functions to support multiple custom renderers
+//
+void LoadAndInitRendererCustom(long *gpucode, void *gpufunc);
+void SetupFrameCustom(void *gpufunc, Bitmap *window, Transform *camtrans);
+void RenderObjectCustom(void *gpufunc, N3DObjdata *data, Transform *trans, Lightmodel *lmodel, TPoint *tpoints);
 
+//
+// helpers
+//
+
+// clears a screen buffer and its associated z-buffer
 void ClearBuffer(Bitmap *buf);
 
 /*
@@ -31,7 +43,9 @@ void ClearBuffer(Bitmap *buf);
  *
  * Defined in mkamt.s
  */
-extern void UpdateAngles(Angles *angles);
+extern void UpdateAngles(Transform *trans);
 
 void FixTexture(Bitmap *texture);
 void FixModelTextures(N3DObjdata *model);
+
+#endif // JAG3D_H
