@@ -52,7 +52,6 @@ typedef struct model {
  *	External functions					*
  ****************************************************************/
 
-extern void VIDon(int);				/* turns video on */
 extern void VIDsync(void);			/* waits for a vertical blank interrupt */
 extern int sprintf(char *, const char *, ...);	/* you know what this does */
 
@@ -208,7 +207,6 @@ main()
 
 	/* initialize the video */
 	OLPset(packed_olist2);
-	VIDon(0x6c1);			/* 0x6c1 = CRY; 0x6c7 = RGB */
 
 	/* wait for video sync (paranoid code) */
 	VIDsync();
