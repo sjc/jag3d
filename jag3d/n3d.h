@@ -165,13 +165,10 @@ typedef union animation {
  */
 
 typedef struct transform {
-	/* use addTrigs() or ??? to set these. */
-	short alpha_sin, alpha_cos;
-	short beta_sin, beta_cos;
-	short gamma_sin, gamma_cos;
-
-	short xpos, ypos, zpos;		/* position */
-	short alpha, beta, gamma;		/* rotations */
+	// simplified now that sin/cos lookup is moved to GPU
+	short xpos, alpha;
+	short ypos, beta;
+	short zpos, gamma;
 } Transform;
 
 /* finally, an object: a transformation matrix, pointer to object data, plus

@@ -9,11 +9,10 @@
 
     ; TODO: remove this once we're happy it's all working
     .extern _test_returns
-
+    .extern _sincos_2048
     .gpu
 
-    .globl  calc_matrix
-calc_matrix:
+calc_matrix::
 
 ;   
 ; This code will calculate the elements of the matrix and assign them
@@ -49,53 +48,60 @@ gamma_sin   .equr   r6,1
 
     ; this version requires that the struct is long world aligned
 
+    ; mask for valid rotations -- 2047 << 2
+    movei   #$00001FFC,temp1
+
+    ; load sin/cos table into base register for indexed loads
+    movei   #_sincos_2048,yhead
+
+    ;
+    ; we could save 3 instructions, 3 stalls, and 6k, if here we just
+    ;   clamp the angle instead of shifting + clamping and effectively
+    ;   round all angles to 4 1/1024 PI
+    ; i don't think the loss of precision will be noticable...
+    ;
+
+    load    (temp0),temp2       ; = xpos|alpha
+    addqt   #4,temp0
+    move    temp2,xposn
+    shlq    #2,temp2            ; = alpha << 2
+    and     temp1,temp2         ; clamp 0-2047 (<< 2)
+    shrq    #16,xposn
+    load    (yhead+temp2),alpha_cos
+
+    load    (temp0),temp2       ; = ypos|beta
+    addqt   #4,temp0
+    move    temp2,yposn
+    shlq    #2,temp2            ; = beta << 2
+    and     temp1,temp2         ; clamp 0-2047 (<< 2)
+    shrq    #16,yposn
+    load    (yhead+temp2),zhead ; = beta_cos
+
+    load    (temp0),temp2       ; = zpos|gamma
+        ; no add, stall
+    move    temp2,zposn
+    shlq    #2,temp2            ; = gamma << 2
+    and     temp1,temp2         ; clamp 0-2047 (<< 2)
+    shrq    #16,zposn
+    load    (yhead+temp2),yhead ; = gamma_cos
+
+    ;
+    ; end of loading test data
+    ;
+
     movei   #$0000FFFF,temp1 ; mask -- keep this in a reg somewhere?
 
-    ;loadw   (temp0),zdown ;alpha_sin
-    ;addqt   #2,temp0
-    ;loadw   (temp0),alpha_cos
-    ;addqt   #2,temp0
-
-    load   (temp0),alpha_cos
-    addqt   #4,temp0
     move    alpha_cos,zdown     ; = alpha_sin
     and     temp1,alpha_cos     ; keep lower part
     shrq    #16,zdown           ; keep upper part
 
-    ;loadw   (temp0),zrite ;beta_sin
-    ;addqt   #2,temp0
-    ;loadw   (temp0),zhead ;beta_cos
-    ;addqt   #2,temp0
-
-    load    (temp0),zhead       ; = beta_cos
-    addqt   #4,temp0
     move    zhead,zrite         ; = beta_sin
     and     temp1,zhead         ; keep lower part
     shrq    #16,zrite           ; keep upper part
 
-    ;loadw   (temp0),gamma_sin
-    ;addqt   #2,temp0
-    ;loadw   (temp0),yhead ;gamma_cos
-    ;addqt   #2,temp0
-
-    load    (temp0),yhead       ; = gamma_cos
-    addqt   #4,temp0
     move    yhead,gamma_sin
     and     temp1,yhead         ; keep lower part
     shrq    #16,gamma_sin       ; keep upper part
-
-    ;loadw   (temp0),xposn
-    ;addqt   #2,temp0
-    ;loadw   (temp0),yposn
-    ;addqt   #2,temp0
-    
-    load    (temp0),yposn
-    addqt   #4,temp0
-    move    yposn,xposn
-    and     temp1,yposn         ; keep lower part
-    shrq    #16,xposn           ; keep upper part
-
-    loadw   (temp0),zposn
 
     ;
     ; xrite = cos(gamma) * cos(beta) + sin(gamma) * sin(beta) * sin(alpha);

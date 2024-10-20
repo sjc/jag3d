@@ -34,16 +34,17 @@ void RenderObjectCustom(void *gpufunc, N3DObjdata *data, Transform *trans, Light
 void ClearBuffer(Bitmap *buf);
 
 /*
- * Models
+ * Transforms
  */
 
+// assuming 2048 step rotation, these can be used to clamp values
+#define ROTMASK 0x7FF
+#define AddRotation(a,b)    ((a+b)&ROTMASK)
+#define SubRotation(a,b)    ((a-b)&ROTMASK)
+
 /*
- * Copy sin() and cos() of each angle (alpha, beta, gamma) into
- * the Angles struct, ready for passing to the GPU.
- *
- * Defined in mkamt.s
+ * Models
  */
-extern void UpdateAngles(Transform *trans);
 
 void FixTexture(Bitmap *texture);
 void FixModelTextures(N3DObjdata *model);

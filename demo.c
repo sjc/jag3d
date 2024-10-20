@@ -261,9 +261,6 @@ main()
 		/* select bitmap for drawing */
 		curwindow = (drawbuf) ? &scrn2 : &scrn1;
 
-		/* update camera, looking-up sin and cos for current rotations */
-		UpdateAngles(camangles);
-
 		/* clear the current draw buffer */
 		/* TODO: this could be moved to the GPU, as part of frameinit() */
 		ClearBuffer(curwindow);
@@ -281,8 +278,6 @@ main()
 		time = clock();
 		
 		for (i = 0; i < OBJCOUNT; i++) {
-			/* update objects, looking-up sin and cos for current rotations */
-			UpdateAngles(&objects[i].transform);
 			RenderObject(objects[i].data, &objects[i].transform, &lightm, tpoints);
 		}
 
@@ -310,18 +305,18 @@ main()
 
 		// left/right rotates the camera around the y axis
 		if (buts & JOY_LEFT) {
-			camangles->beta -= 4;
+			camangles->beta = SubRotation(camangles->beta, 4);
 		} else if (buts & JOY_RIGHT) {
-			camangles->beta += 4;
+			camangles->beta = AddRotation(camangles->beta, 4);
 		}
 
 		// up/down raises or lowers the camera
 		if (buts & JOY_UP) {
 			camangles->ypos -= 4;
-			camangles->alpha -= 2;
+			camangles->alpha = SubRotation(camangles->alpha,2);
 		} else if (buts & JOY_DOWN) {
 			camangles->ypos += 4;
-			camangles->alpha += 2;
+			camangles->alpha = AddRotation(camangles->alpha,2);
 		}
 	
 		/* display the buffer we just drew */
