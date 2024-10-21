@@ -140,7 +140,7 @@ union olist buf2_olist[2] =
 
 /* Bitmaps for the two screens */
 Bitmap scrn1 = {
-	CAMWIDTH, CAMHEIGHT,
+	CAMHEIGHT, CAMWIDTH,
 	PIXEL16|PITCH3|ZOFFS2|WIDFLAG,
 	(void *)(DATA1 + ((OBJWIDTH-CAMWIDTH)*3L) + (((OBJHEIGHT-CAMHEIGHT)/2)*LINELEN) ),
 	CLEAR_COLOR
@@ -148,7 +148,7 @@ Bitmap scrn1 = {
 
 /* initial data for camera corresponding to second screen buffer */
 Bitmap scrn2 = {
-	CAMWIDTH, CAMHEIGHT,
+	CAMHEIGHT, CAMWIDTH,
 	PIXEL16|PITCH3|ZOFFS1|WIDFLAG,
 	(void *)(DATA2 + ((OBJWIDTH-CAMWIDTH)*3) + (((OBJHEIGHT-CAMHEIGHT)/2)*LINELEN) ),
 	CLEAR_COLOR
@@ -261,11 +261,10 @@ main()
 		/* select bitmap for drawing */
 		curwindow = (drawbuf) ? &scrn2 : &scrn1;
 
-		/* clear the current draw buffer */
-		/* TODO: this could be moved to the GPU, as part of frameinit() */
-		ClearBuffer(curwindow);
-
-		/* setup the shared rendering state for this frame */
+		/* setup the shared rendering state for this frame:
+			 - calculates the camera matrix
+			 - clears the image- and z-buffer
+		*/
 		SetupFrame(curwindow, camangles);
 
 		/* now draw the objects, timing how long it takes */

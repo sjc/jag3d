@@ -80,15 +80,12 @@ RenderObject(N3DObjdata *data, Transform *trans, Lightmodel *lmodel, TPoint *tpo
  * a solid color, and its Z buffer with a null value        *
  ****************************************************************/
 
-// TODO: Move this to the GPU as part of the frame setup
+// NOTE: This is now done on the GPU as part of SetupFrame()
 
 void
 ClearBuffer(Bitmap *buf)
 {
-    // long bgcolor = 0x27a027a0;       /* fill color, duplicated */
     long zvalue = 0xffffffff;       /* Z value (16.16 fraction) */
-
-    // TODO: we could move this into the renderer, as part of frame_init()
 
     B_PATD[0] = buf->clearcolor;
     B_PATD[1] = buf->clearcolor;
@@ -101,7 +98,6 @@ ClearBuffer(Bitmap *buf)
     A1_FLAGS = buf->blitflags|XADDPHR;
     A1_PIXEL = 0;
     A1_CLIP = 0;
-    // this could be optomised by storing heigh,width
     B_COUNT = ((long)buf->height << 16) | (buf->width);
     B_CMD = UPDA1|DSTWRZ|PATDSEL;
 }

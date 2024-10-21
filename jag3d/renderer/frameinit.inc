@@ -20,19 +20,110 @@
 ;
 
 cammat      .equr   pgon                ; pointer to camera matrix
+bptr        .equr   r14,1               ; indexed pointer which is free outside matrix use
 
 ;
 ; load up our parameters
 ;
+
     movei   #_params,temp0
-        ; stall
+    movei   #A1_BASE,bptr
+
     load    (temp0),cam         ; get output bitmap pointer
     addqt   #4,temp0
-        ; stall
     load    (temp0),cammat          ; get camera matrix pointer
 
 
-; TODO: can we start the blitter clearing the bitmap here?
+;
+; get camera info, and adjust the transformation matrix so that
+; it transforms the viewing pyramid into "canonical" form
+; (-z < x,y < z)
+;
+
+    load    (cam),temp0     ; == height|width
+    addqt   #4,cam
+
+    load    (cam),temp1     ; get the blitter flags
+    addqt   #4,cam
+    moveta  temp1,destflags
+
+    load    (cam),temp2     ; get the bitmap address
+    addqt   #4,cam
+    moveta  temp2,destaddr
+
+    store   temp2,(bptr)    ; A1_BASE = buffer base address
+        
+    store   temp1,(bptr+((A1_FLAGS-A1_BASE)/4))    ; XADDPHR == 0, so nothing to do
+        
+    moveq   #0,temp2
+
+    move    temp0,temp1     ; we want: 0x00010000L | ((-buf->width) & 0x0000ffff)
+        
+    shlq    #16,temp1    
+    neg     temp1
+    shrq    #16,temp1
+    bset    #16,temp1
+
+    store   temp1,(bptr+((A1_STEP-A1_BASE)/4))
+
+    store   temp2,(bptr+((A1_CLIP-A1_BASE)/4))      ; temp2 == 0
+    store   temp2,(bptr+((A1_PIXEL-A1_BASE)/4))
+        
+    subqt   #1,temp2    ; == -1 == $FFFFFFFF
+
+    store   temp0,(bptr+((B_COUNT-A1_BASE)/4))
+
+    load    (cam),temp1                             ; == clear colour
+    store   temp1,(bptr+((B_PATD-A1_BASE)/4))
+    store   temp1,(bptr+((B_PATD-A1_BASE)/4)+1)
+
+    movefa  bcmd_ptr,bptr       ; bptr -> B_CMD
+
+    store   temp2,(bptr+((B_Z0-B_CMD)/4))           ; temp2 == $FFFFFFFF
+    store   temp2,(bptr+((B_Z1-B_CMD)/4))
+    store   temp2,(bptr+((B_Z2-B_CMD)/4))
+    store   temp2,(bptr+((B_Z3-B_CMD)/4))
+
+    movei   #(UPDA1|DSTWRZ|PATDSEL),temp1
+    store   temp1,(bptr)    ; start the blitter
+
+    .equrundef  bptr    ; finished with this
+
+    ; temp0 == height|width
+    ; temp2 == $FFFFFFFF
+    ; we want: temp0 == width, temp1 == height
+
+    shrq    #16,temp2       ; == $0000FFFF
+    move    temp0,temp1
+    and     temp2,temp0     ; == width
+    shrq    #16,temp1       ; == height
+
+    shlq    #15,temp0       ; convert to 16.16, and divide by 2
+    shlq    #15,temp1
+    move    temp1,temp2
+    div     temp0,temp2     ; make temp2 = aspect ratio = height/width
+
+    movei   #camscale+12,cam    ; or aspectratio+16
+
+.if WIREFRAME = 0
+    bset    #15,temp1       ; add 1/2 for rounding
+    bset    #15,temp0
+.endif
+    store   temp1,(cam)     ; store ycenter (=height/2)
+    subqt   #4,cam
+    store   temp0,(cam)     ; store xcenter (=width/2)
+    subqt   #4,cam
+    sharq   #16,temp1       ; convert back to 0.16 integers
+    sharq   #16,temp0
+    store   temp1,(cam)     ; store yscale
+    subqt   #4,cam
+    store   temp0,(cam)     ; store xscale
+
+    shrq    #2,temp2        ; convert aspect ratio to a 0.14 fixed point number
+    subqt   #4,cam
+    store   temp2,(cam)
+
+    ; cam -> aspectratio
 
 
 ;
@@ -82,7 +173,7 @@ zposn       .equr   r19,1
     ; call our matrix calculator function
     ; this returns with the matrix in the named registers
 
-    move    cammat,temp0    ; will be a pointer to camera _angles_
+    move    cammat,temp0    ; will be a pointer to camera transform
     movei   #calc_matrix,temp1
     move    PC,return
     jump    (temp1)
@@ -111,16 +202,11 @@ zposn       .equr   r19,1
     neg     temp0
     neg     temp1
     neg     temp2
-    sharq   #14,temp0
-    sharq   #14,temp1
-    sharq   #14,temp2
-    move    temp0,xposn
-    move    temp1,yposn
-    move    temp2,zposn
+    sharq   #14,temp0   ; == xposn
+    sharq   #14,temp1   ; == yposn
+    sharq   #14,temp2   ; == zposn
 
     ; store the camera matrix for use by objsetup
-
-    ; TODO: use r14/r15 for scrmat
 
     movei   #cammatrix,srcmat   ; load pointer now we're back from calculating the matrix
 
@@ -130,7 +216,7 @@ zposn       .equr   r19,1
     addqt   #4,srcmat
     store   xhead,(srcmat)
     addqt   #4,srcmat
-    store   xposn,(srcmat)
+    store   temp0,(srcmat)      ; temp0 == xposn
     addqt   #4,srcmat
 
     store   yrite,(srcmat)      ; store next word
@@ -139,7 +225,7 @@ zposn       .equr   r19,1
     addqt   #4,srcmat
     store   yhead,(srcmat)
     addqt   #4,srcmat
-    store   yposn,(srcmat)
+    store   temp1,(srcmat)      ; temp1 == yposn
     addqt   #4,srcmat
 
     store   zrite,(srcmat)      ; store next word
@@ -148,56 +234,11 @@ zposn       .equr   r19,1
     addqt   #4,srcmat
     store   zhead,(srcmat)
     addqt   #4,srcmat
-    store   zposn,(srcmat)
+    store   temp2,(srcmat)      ; temp2 == zposn
+
 
 ;
-; get camera info, and adjust the transformation matrix so that
-; it transforms the viewing pyramid into "canonical" form
-; (-z < x,y < z)
-;
-    
-    ; this could probably go in the one-time init...
-    ; although the dest address will change each frame...
-
-    loadw   (cam),temp0     ; get width
-    addqt   #2,cam
-    loadw   (cam),temp1     ; get height
-    addqt   #2,cam
-    load    (cam),temp2     ; get the blitter flags
-    addqt   #4,cam
-    moveta  temp2,destflags
-    load    (cam),temp2     ; get the bitmap address
-    moveta  temp2,destaddr
-
-    shlq    #15,temp0       ; convert to 16.16, and divide by 2
-    shlq    #15,temp1
-    move    temp1,temp2
-    div     temp0,temp2     ; make temp2 = aspect ratio = height/width
-
-    movei   #camscale+12,cam    ; or aspectratio+16
-
-.if WIREFRAME = 0
-    bset    #15,temp1       ; add 1/2 for rounding
-    bset    #15,temp0
-.endif
-    store   temp1,(cam)     ; store ycenter (=height/2)
-    subqt   #4,cam
-    store   temp0,(cam)     ; store xcenter (=width/2)
-    subqt   #4,cam
-    sharq   #16,temp1       ; convert back to 0.16 integers
-    sharq   #16,temp0
-    store   temp1,(cam)     ; store yscale
-    subqt   #4,cam
-    store   temp0,(cam)     ; store xscale
-
-    shrq    #2,temp2        ; convert aspect ratio to a 0.14 fixed point number
-    subqt   #4,cam
-    store   temp2,(cam)
-
-    ; cam -> aspectratio
-
-;
-; all done, kill the GPU
+; all done for now, kill the GPU
 ;
 
     movei   #gpudone,r0

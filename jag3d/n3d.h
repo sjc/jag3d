@@ -61,7 +61,7 @@ typedef struct point {
  * (3) a pointer to the actual data
  */
 typedef struct texmap {
-	short	width, height;
+	short	height, width;
 	long	blitflags;
 	unsigned short *data;
 	long clearcolor;
