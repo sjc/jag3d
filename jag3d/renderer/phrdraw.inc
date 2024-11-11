@@ -31,7 +31,6 @@ z3		.equr	atemp0
 ; spill registers from alternate bank
 ;
 spill0		.equr	temp0
-spill1		.equr	temp1
 
 ;
 ; SET-UP ROUTINE FOR GOURAUD SHADED POLYGONS
@@ -41,56 +40,51 @@ spill1		.equr	temp1
 
 	.globl	gourpoly
 gourpoly:
-;
-; make sure the blitter is off
-;
-	movefa	bcmd_ptr,temp0
-.bwait:
-	load	(temp0),temp1
-	btst	#0,temp1
-	jr	EQ,.bwait
-	nop
 
-	addqt	#4,temp0		; now temp0 = address of B_COUNT
+	; the caller will have ensured that the blitter is not in use
+	; temp0 == bcmd_ptr
+
+	addqt	#4,temp0		; now temp0 == B_COUNT
 	moveta	temp0,bcount_ptr
 
-	movei	#B_I3,temp0
+	addqt 	#32,temp0 		; == B_I3 == B_COUNT + 64
+	addqt 	#32,temp0
 
 	movei	#PATDSEL|GOURD|ZBUFF|ZMODEGT|DSTENZ|DSTWRZ|DSTEN|BKGWREN,temp1
 
 	moveta	temp0,bi3_ptr
 	moveta	temp1,bcmdval
 
-	movefa	b_color,temp0
-	movei	#B_PATD,temp1
-	store	temp0,(temp1)
-	addqt	#4,temp1
-	store	temp0,(temp1)
+	movefa	b_color,temp1
+	subqt	#(B_I3-B_PATD),temp0 	; == B_PATD
+	store	temp1,(temp0)
+	addqt	#4,temp0
+	store	temp1,(temp0)
 
 ;
 ; set up the destination registers
 ;
-	movei	#B_ZINC,temp2
+	addqt 	#(B_ZINC-B_PATD),temp0
 	movefa	b_zinc,temp1
-	movefa	b_iinc,temp0
+	movefa	b_iinc,temp2
 	shlq	#2,temp1			; multiply Z increment by 4
 	; make sure intensity increment*4 fits in 24 bits
-	abs	temp0
+	abs	temp2
 	jr	CC,.posiinc
-	shlq	#3,temp0			; multiply by 8
-		sat24	temp0
-		shrq	#1,temp0
-		neg	temp0
-		shlq	#8,temp0
+	shlq	#3,temp2			; multiply by 8
+		sat24	temp2
+		shrq	#1,temp2
+		neg		temp2
+		shlq	#8,temp2
 		jr	.storiinc
-		shrq	#8,temp0
+		shrq	#8,temp2
 .posiinc:
-	sat24	temp0
-	shrq	#1,temp0
+	sat24	temp2
+	shrq	#1,temp2
 .storiinc:
-	store	temp1,(temp2)
-	subqt	#(B_ZINC-B_IINC),temp2
-	store	temp0,(temp2)
+	store	temp1,(temp0)
+	subqt	#(B_ZINC-B_IINC),temp0
+	store	temp2,(temp0)
 
 	movefa	a1_ptr,temp2
 	movefa	destaddr,temp1
@@ -101,20 +95,25 @@ gourpoly:
 	jump	(return)
 	store	temp1,(temp2)		; set A1_FLAGS
 
+
+
 ;
 ; per-trapezoid routine for gouraud shading
 ; called in regbank 0
 ;
 	.globl	gourtrap
 gourtrap:
-	.REGBANK0
+	;.REGBANK0
 
 .if (^^defined PROFILING)
 	ADDTIME	POLYSETUP
 .endif
 
-	movei	#B_ZINC,bzinc_ptr
-	movei	#B_IINC,biinc_ptr
+	; do these need to be set every time through?
+	move 	bi3_ptr,bzinc_ptr
+	move 	bi3_ptr,biinc_ptr
+	subqt	#(B_I3-B_ZINC),bzinc_ptr
+	subqt	#(B_I3-B_IINC),biinc_ptr
 
 	shrq	#16,ay				; strip fractional part of ay
 	shlq	#16,ay
@@ -239,13 +238,13 @@ gourline:
 ; set Y to Y|X (i.e. A1_PIXEL value)
 ; and set bcount to the (16 bit) count value
 ;
-	store	i0, (bi3_ptr)
+	store	i0,(bi3_ptr)
 	subqt	#4,bi3_ptr
-	store	z0, (bz3_ptr)
+	store	z0,(bz3_ptr)
 	subqt	#4,bz3_ptr
-	store	i1, (bi3_ptr)
+	store	i1,(bi3_ptr)
 	subqt	#4,bi3_ptr
-	store	z1, (bz3_ptr)
+	store	z1,(bz3_ptr)
 	subqt	#4,bz3_ptr
 	store	i2,(bi3_ptr)
 	subqt	#4,bi3_ptr
@@ -289,16 +288,10 @@ gourdone:
 	ADDTIME	SCANLINES
 .endif
 
-
-	movei	#G_FLAGS,atemp1			; switch back to bank 1
-	load	(atemp1),atemp0
 	movefa	return,atemp2
-	bset	#14,atemp0
 	jump	(atemp2)
-	store	atemp0,(atemp1)			; the jump will flush the prefetch queue
-;	nop					; and take 3 cycles, giving time for the new flags
-;	nop					; to take effect
-	.REGBANK1
+	movefa 	gflags,atemp1 		; setup for the code we're returning to
+
 
 	.equrundef	bi3_ptr
 	.equrundef	bcount_ptr
@@ -314,4 +307,3 @@ gourdone:
 	.equrundef	i3
 
 	.equrundef	spill0
-	.equrundef	spill1

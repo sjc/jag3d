@@ -13,11 +13,11 @@
 ;***********************************************************
 ;
 ; the ZBUFF flag needs to be present for SRCSHADE to work
-
+; DSTA2 is set, meaning A2 (gpubuf) is the destination
+;
 FIRSTBCMD	=	(SRCEN|LFU_S|DSTA2|SRCSHADE|ZBUFF)
-;;;FIRSTBCMD	=	(SRCEN|LFU_S|DSTA2)
 
-; blitter command flags for the last blit
+; blitter command flags for the last (second) blit
 LASTBCMD	=	(SRCEN|LFU_S|DSTEN|DSTENZ|DSTWRZ|ZMODEGT|ZBUFF|BKGWREN|DCOMPEN)
 
 srcpix		.equr	righti			; next value for A1_PIXEL
@@ -63,23 +63,30 @@ texpoly:
 	movei	#_gpubuf,temp1
 	subqt	#(A2_PIXEL-A2_BASE),temp2
 	store	temp1,(temp2)		; set A2_BASE
+		; TODO: does anything else change A2_BASE? can we set this up once for this renderer?
 
 ;
 ; set the pattern data register to -1 for comparison with
 ; end of line
 ;
-	moveq	#1,atemp0
-	movei	#B_PATD,atemp1
-	neg	atemp0
-	store	atemp0,(atemp1)
-	addqt	#4,atemp1
-	store	atemp0,(atemp1)
+	moveq	#1,temp0
+	movei	#B_PATD,temp2 		; TODO: find a quicker/shorter way to do this
+	neg		temp0
+	store	temp0,(temp2)
+	addqt	#4,temp2
+	store	temp0,(temp2)
+
+	; TODO: srcflags isn't used by the alternative non-textured render path. so if
+	;	we don't use it elsewhere, we could set XADDINC on it once somewhere else
 
 	movefa	srcflags,temp0
-	movei	#XADDINC,temp1
-	or	temp1,temp0
+	bset 	#16,temp0 			; #XADDINC == 0x00030000
+	bset 	#17,temp0
 	jump	(return)
 	moveta	temp0,srcflags
+
+
+
 
 ;**********************************************
 ; Render a texture mapped trapezoid
@@ -87,10 +94,12 @@ texpoly:
 
 	.globl	textrap
 textrap:
-	.REGBANK0				; we are entered in register bank 0
+	;.REGBANK0				; we are entered in register bank 0
 
-	movei	#B_COUNT,atemp0
-	movei	#B_IINC,atemp1
+	move 	bcmd_ptr,atemp0
+	move 	bz3_ptr,atemp1
+	addqt 	#(B_COUNT-B_CMD),atemp0 	; == B_COUNT
+	subqt 	#(B_Z3-B_IINC),atemp1 		; == B_IINC
 	moveta	atemp0,countaddr
 	moveta	atemp1,bi3addr
 
@@ -210,38 +219,40 @@ texline1:
 ; the phrase as in the destination
 ;
 	moveq	#3,atemp0
-	and	ay,atemp0
+	and		ay,atemp0
 .bwait:
 	load	(bcmd_ptr),atemp1
 	btst	#0,atemp1
 	jr	EQ,.bwait
 	nop
 
-	store	srcpix, (a1_ptr)		; set A1_PIXEL
-	addqt	#(A1_FPIXEL-A1_PIXEL),a1_ptr	; move to A1_FPIXEL
+	; A2_BASE has already been set to _gpubuf
+
+	store	srcpix,(a1_ptr)					; set A1_PIXEL
+	addqt	#(A1_FPIXEL-A1_PIXEL),a1_ptr	; == A1_FPIXEL
 	store	atemp0,(a2_ptr)					; set A2_PIXEL to initial pixel to blit
-	subqt	#(A2_PIXEL-A2_FLAGS),a2_ptr
-	store	srcfpix, (a1_ptr)
-	subqt	#(A1_FPIXEL-A1_BASE),a1_ptr	; move to A1_BASE
+	subqt	#(A2_PIXEL-A2_FLAGS),a2_ptr 	; == A2_FLAGS
+	store	srcfpix,(a1_ptr) 				; set A1_FPIXEL
+	subqt	#(A1_FPIXEL-A1_BASE),a1_ptr		; == A1_BASE
 	store	gpuflags,(a2_ptr)				; set A2_FLAGS
-	addqt	#(A2_PIXEL-A2_FLAGS),a2_ptr
-	store	srcaddr,(a1_ptr)
-	addqt	#4,a1_ptr			; move to A1_FLAGS
+	addqt	#(A2_PIXEL-A2_FLAGS),a2_ptr 	; reset to A2_PIXEL
+	store	srcaddr,(a1_ptr) 				; set A1_BASE
+	addqt	#4,a1_ptr						; == A1_FLAGS
 	movefa	countaddr,atemp1
-	store	bcount,(atemp1)			; set B_COUNT
-	store	srcflags,(a1_ptr)
-	addqt	#(A1_INC-A1_FLAGS),a1_ptr
-	store	b_uinc,(a1_ptr)
-	addqt	#(A1_FINC-A1_INC),a1_ptr
-	store	b_vinc,(a1_ptr)
-	subqt	#(A1_FINC-A1_PIXEL),a1_ptr
+	store	bcount,(atemp1)					; set B_COUNT
+	store	srcflags,(a1_ptr) 				; set A1_FLAGS
+	addqt	#(A1_INC-A1_FLAGS),a1_ptr 		; == A1_INC
+	store	b_uinc,(a1_ptr) 				; set A1_INC
+	addqt	#(A1_FINC-A1_INC),a1_ptr 		; == A1_FINC
+	store	b_vinc,(a1_ptr) 				; set A1_FINC
+	subqt	#(A1_FINC-A1_PIXEL),a1_ptr 		; reset to A1_PIXEL
 
 	movefa	bi3addr,atemp0
 	store	adjusti,(atemp0)		; set up intensity
 	store	bcmdval,(bcmd_ptr)		; start the first blit
 
 ;
-; set up for the last blit
+; set up for the last (second) blit
 ;
 	movei	#LASTBCMD,bcmdval
 	movefa	altbcount,bcount
@@ -352,40 +363,31 @@ dosecondblit:
 	store	z0,(atemp2)
 
 	shlq	#2,b_zinc
-	movei	#B_ZINC,atemp2
+	movei	#B_ZINC,atemp2 		; TODO: can we load this some other way?
 	store	b_zinc,(atemp2)
 
-	store	ay,(a1_ptr)			; set A1_PIXEL
-	subqt	#(A1_PIXEL-A1_BASE),a1_ptr
-	store	atemp0,(a2_ptr)			; set A2_PIXEL
-	subqt	#(A2_PIXEL-A2_FLAGS),a2_ptr
-	store	destaddr,(a1_ptr)		; set A1_BASE
-	addqt	#(A1_FLAGS-A1_BASE),a1_ptr	; move to A1_FLAGS
-	store	gpuflags,(a2_ptr)		; set A2_FLAGS
-	addqt	#(A2_PIXEL-A2_FLAGS),a2_ptr
-	store	destflags,(a1_ptr)
-	addqt	#(A1_PIXEL-A1_FLAGS),a1_ptr	; set A1_FLAGS
+	store	ay,(a1_ptr)					; set A1_PIXEL
+	subqt	#(A1_PIXEL-A1_BASE),a1_ptr 	; == A1_BASE
+	store	atemp0,(a2_ptr)				; set A2_PIXEL
+	subqt	#(A2_PIXEL-A2_FLAGS),a2_ptr ; == A2_FLAGS
+	store	destaddr,(a1_ptr)			; set A1_BASE
+	addqt	#(A1_FLAGS-A1_BASE),a1_ptr	; == A1_FLAGS
+	store	gpuflags,(a2_ptr)			; set A2_FLAGS
+	addqt	#(A2_PIXEL-A2_FLAGS),a2_ptr ; reset to A2_PIXEL
+	store	destflags,(a1_ptr) 			; set A1_FLAGS
+	addqt	#(A1_PIXEL-A1_FLAGS),a1_ptr	; reset to A1_PIXEL
 	movefa	countaddr,atemp0
-	store	bcount,(atemp0)
-	store	bcmdval,(bcmd_ptr)		; start the blit
-
+	store	bcount,(atemp0) 			; set B_COUNT
+	store	bcmdval,(bcmd_ptr)			; start the last (second) blit
 
 ;
 ; now set up for the next blit, which will be the source->GPU RAM
 ; blit
 ;
-	bset	#16,gpuflags			; convert XADDPHR->XADDPIX in A2_FLAGS
 
-	movei	#texline1,atemp1
-	shrq	#16,ay				; isolate just the Y value
-	subq	#1,anumlines
-	addqt	#1,ay				; increment it
-	jump	PL,(atemp1)
-	shlq	#16,ay				; put Y back in high word
-
-	movei	#texdone,atemp1
-	jump	(atemp1)
-	nop
+	movei 	#texloop,atemp1 	; because the code which was here is duplicated below
+	jump 	(atemp1)
+	bset	#16,gpuflags		; convert XADDPHR->XADDPIX in A2_FLAGS
 
 ;
 ; if a zero length line was encountered, we must re-do the whole thing
@@ -407,6 +409,8 @@ texzerocount:
 	add	atemp1,rightu
 	movefa	rightzstep,atemp0
 	add	atemp0,rightz
+
+texloop:
 	movei	#texline1,atemp1
 	shrq	#16,ay				; isolate just the Y value
 	subq	#1,anumlines
@@ -427,15 +431,9 @@ texdone:
 	jr	EQ,.bwait
 	nop
 
-	movei	#G_FLAGS,atemp1			; switch back to bank 1
-	load	(atemp1),atemp0
 	movefa	return,atemp2
-	bset	#14,atemp0
 	jump	(atemp2)
-	store	atemp0,(atemp1)			; the jump will flush the prefetch queue
-;	nop					; and take 3 cycles, giving time for the new flags
-;	nop					; to take effect
-	.REGBANK1
+	movefa 	gflags,atemp1 		; setup for the code we're returning to
 
 
 	.equrundef	z0

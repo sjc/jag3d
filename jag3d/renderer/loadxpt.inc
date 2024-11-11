@@ -67,22 +67,12 @@ _loadxpoint:
 	add		tpoints,temp2		; temp2 points to tpoints array entry
 		; stall
 	load	(temp2),basei		; load basei and clip code
-
-	;addqt	#4,temp2
-	;load	(temp2),x		; load transformed x 
-	;addqt	#4,temp2
-	;load	(temp2),y		; load transformed y
-	;addqt	#4,temp2
-	;load	(temp2),z		; load z; leave temp2 pointing at tpoints+12
-
 		; stall
 	btst	#7,basei		; has this point been transformed yet?
 		; stall	
 	jump	EQ,(temp0)		; yes -- go set the Xpoint
 	nop
 
-; TODO: Can we perform the check above once we have `basei`, so we aren't 
-;	loading in invalid data every time? -- DONE
 
 ;
 ; save the colori,texwidth,and texheight registers
@@ -113,6 +103,7 @@ _loadxpoint:
 	addqt	#4,temp1
 		; stall
 	load	(temp1),vz		; load VY and VZ
+	
 	move	x,y
 	rorq	#16,x			; get X into low word (keep Y in high word for later use)
 	move	z,vx				; vx is already in low word

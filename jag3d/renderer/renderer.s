@@ -36,6 +36,13 @@
 ; Maximum number of polygon sides supported
 ;
 
+; "Wire Frames" (wfrend.s)
+;WIREFRAME	=	1
+;PHRASEMODE	=	0
+;TEXTURES	=	0
+;TEXSHADE	=	0
+;POLYSIDES	=	3
+
 ; "Gouraud Only" (gourrend.s)
 ;WIREFRAME	=	0
 ;PHRASEMODE	=	0
@@ -43,15 +50,9 @@
 ;TEXSHADE	=	0
 ;POLYSIDES	=	4
 
-; "Wire Frames" (wfrend.s)
-;WIREFRAME	=	1
-;PHRASEMODE	=	0
-;TEXTURES	=	0
-;POLYSIDES	=	3
-
 ; "Phrase Mode Gouraud" (gourphr.s)
 ;WIREFRAME	=	0
-;PHRASEMODE	=	0
+;PHRASEMODE	=	1
 ;TEXTURES	=	0
 ;TEXSHADE	=	0
 ;POLYSIDES	=	4
@@ -71,7 +72,7 @@ POLYSIDES	=	4
 ;POLYSIDES	=	4
 
 ; "Gouraud Shaded Textures" (gstex.s)
-; doesn't work well, buffer issue?
+; NOTE: You must call FixModelTextures() on each textured model in this mode
 ;WIREFRAME	=	0
 ;PHRASEMODE	=	0
 ;TEXTURES	=	1
@@ -100,6 +101,15 @@ PERSP_SHIFT	=	2
 ;
 MINZ		=	8
 
+;
+; TEXSHADE2BUF
+; Temporary buffer used by the TEXSHADE = 2 rendered (texdraw2.inc)
+; It's up to you to ensure that this is a valid free address in DRAM
+; If this value is set to 0, the CLUT is used instead
+;
+;TEXSHADE2BUF = $1ef000
+TEXSHADE2BUF = 0
+
 	.include 	'jaguar.inc'
 ;
 ; GPU code for doing polygon rendering
@@ -119,11 +129,7 @@ _renderer_code:
 	.gpu
 
 	.include 	"globlreg.inc"
-;.if WIREFRAME
-;	.include	"trapregs.inc"
-;.else
 	.include	"polyregs.inc"
-;.endif
 
 	.org	G_RAM
 
@@ -137,7 +143,7 @@ _renderer_objinit:
 ;
 ; Parameters:
 ;   params[0] = pointer to object data
-;   params[1] = pointer to object angles
+;   params[1] = pointer to object transform
 ;   params[2] = pointer to lighting model
 ;   params[3] = pointer to work array to use for transformed points
 ;
@@ -364,6 +370,7 @@ _GPUP1	=	initcode
 _GPUP2	=	_GPUP1 + (4*SIZEOF_POLYGON)
 _gpubuf = 	_GPUP2 + (4*SIZEOF_POLYGON)
 ; _gpubuf must be phrase aligned!
+; _gpubuf is only used by texdraw1 (if TEXSHADE	= 1)
 
 ;
 ; One-time initialisation code

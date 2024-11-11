@@ -56,14 +56,10 @@ color		.equr	r13,1		; color for this polygon
 .endif ; TEXTURES
 
 	shrq	#24,color				; isolate color
-		; stall
 	shlq	#8,color
-		; stall
 	move	color,temp0				; duplicate color into a long
 	shlq	#16,color
-		; stall
 	or		temp0,color
-		; stall
 	moveta	color,b_color
 
 ;
@@ -114,12 +110,11 @@ color		.equr	r13,1		; color for this polygon
 	load	(right),temp0
 	addqt	#SIZEOF_XPOINT,right
 	sharq	#16,temp0				; set temp0 = right->y
-		; stall
+
 	cmp		y,temp0					; if y <= right->y
 	jr		PL,.forlp				; 	continue
 	nop
 	move	right,left
-		; stall
 	subqt	#SIZEOF_XPOINT,left
 	move	temp0,y
 	jr	.forlp
@@ -141,11 +136,11 @@ color		.equr	r13,1		; color for this polygon
 ; make sure the blitter is finished
 ;***********************************
 
-; changed regs used, to match expectations of -poly subs we call from here
+; regs used here match the expectations of -poly setup function we call from here
 
-	movefa	bcmd_ptr,temp0 	; was temp1
+	movefa	bcmd_ptr,temp0
 .bwloop1:
-	load	(temp0),temp1	; was (temp1),temp0
+	load	(temp0),temp1
 	btst	#0,temp1
 	jr		EQ,.bwloop1
 
@@ -169,6 +164,7 @@ innerloop	.equr	return		; inner loop branch address
 ; (AND ARE USED BY POLYREGS.INC)
 
 	movefa	atemp0,trapfunc
+
 ;
 ; set up initial left and right values
 ;
@@ -184,6 +180,7 @@ innerloop	.equr	return		; inner loop branch address
 	moveta	temp1,lefti
 	moveta	temp0,rightz
 	moveta	temp1,righti ; IS THIS CORRECT? was `rightz`, changed to `righti`
+
 .if TEXTURES
 
 	; TODO: check if this face has a texture
@@ -530,15 +527,29 @@ doneleft:
 
 	moveta	numlines,anumlines
 ;
-; switch to bank 0
+; switch to bank 0, call the rendering function, then switch back to
+;	bank 1 upon return and loop
 ;
-	movei	#G_FLAGS,temp1
+
 	add		numlines,y			; update value of Y
-	load	(temp1),temp0		; get G_FLAGS register
-	movei	#polyloop,return	; when we return from gourtrap, we should go back to the start of the loop
+	
+	load	(gflags),temp0		; get G_FLAGS register
+	move 	PC,return
 	bclr	#14,temp0			; set bank flag to 0
+	addqt 	#10,return 			; return to after the jump + store
 	jump	(trapfunc)
-	store	temp0,(temp1)		; switch banks during the jump
+	store	temp0,(gflags)		; switch banks during the jump
+
+	; we return here in bank 0
+	; the returning code will have put gflags into atemp1
+
+	load	(atemp1),atemp0		; get G_FLAGS register
+	movei	#polyloop,atemp2	; when we've switched banks we will loop
+	bset 	#14,atemp0 			; switch back to bank 1
+	jump 	(atemp2)
+	store	atemp0,(atemp1)		; switch banks during the jump
+
+	;.REGBANK1
 
 endloop:
 

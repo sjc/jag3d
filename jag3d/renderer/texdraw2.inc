@@ -19,11 +19,11 @@
 ; either be in DRAM or the Colour Lookup Table, since
 ; GPU RAM can only be read/written on longword boundaries.
 ;
-.if 1
-DATABUF = CLUT
+.if TEXSHADE2BUF
+; pick some place in DRAM big enough to hold a line of pixels and set it in renderer.s
+DATABUF = TEXSHADE2BUF
 .else
-; pick some place in DRAM big enough to hold a line of pixels.
-DATABUF = $1ef000
+DATABUF = CLUT
 .endif
 
 ; blitter flags for first blit (setting up gouraud shading)
@@ -43,7 +43,6 @@ z1		.equr	srcfpix			; second Z value for phrase mode blit
 z2		.equr	b_uinc			; third Z value
 z3		.equr	b_vinc			; fourth Z value
 
-altbcount	.equr	temp0		; adjusted count (for GPU RAM, count must be even)
 countaddr	.equr	temp1		; address of B_COUNT
 bi3addr		.equr	temp2		; address of B_I3
 
@@ -76,10 +75,13 @@ texpoly:
 	store	temp1,(temp2)		; set A2_BASE
 
 	movefa	srcflags,temp0
-	movei	#XADDINC,temp1
-	or	temp1,temp0
+	bset 	#16,temp0 			; XADDINC == 0x00030000
+	bset 	#17,temp0
 	jump	(return)
 	moveta	temp0,srcflags
+		; TODO: update srcflags when initially setting it
+
+
 
 
 ;**********************************************
@@ -88,10 +90,12 @@ texpoly:
 
 	.globl	textrap
 textrap:
-	.REGBANK0				; we are entered in register bank 0
+	;.REGBANK0				; we are entered in register bank 0
 
-	movei	#B_COUNT,atemp0
-	movei	#B_I3,atemp1
+	move 	bcmd_ptr,atemp0
+	move 	bz3_ptr,atemp1
+	addqt 	#(B_COUNT-B_CMD),atemp0 	; == B_COUNT
+	subqt 	#(B_Z3-B_I3),atemp1 		; == B_I3	
 	moveta	atemp0,countaddr
 	moveta	atemp1,bi3addr
 
@@ -195,47 +199,50 @@ texline1:
 ; the phrase as in the destination
 ;
 	moveq	#3,atemp0
-	and	ay,atemp0
+	and		ay,atemp0
 .bwait:
 	load	(bcmd_ptr),atemp1
 	btst	#0,atemp1
 	jr	EQ,.bwait
 	nop
 
-	store	srcpix, (a1_ptr)		; set A1_PIXEL
-	addqt	#(A1_FPIXEL-A1_PIXEL),a1_ptr	; move to A1_FPIXEL
+	store	srcpix,(a1_ptr)					; set A1_PIXEL
+	addqt	#(A1_FPIXEL-A1_PIXEL),a1_ptr	; == A1_FPIXEL
 	store	atemp0,(a2_ptr)					; set A2_PIXEL to initial pixel to blit
-	subqt	#(A2_PIXEL-A2_FLAGS),a2_ptr
-	store	srcfpix, (a1_ptr)
-	subqt	#(A1_FPIXEL-A1_BASE),a1_ptr	; move to A1_BASE
+	subqt	#(A2_PIXEL-A2_FLAGS),a2_ptr 	; == A2_FLAGS
+	store	srcfpix,(a1_ptr) 				; set A1_FPIXEL
+	subqt	#(A1_FPIXEL-A1_BASE),a1_ptr		; == A1_BASE
 	movei	#(PIXEL16|WID320|PITCH1|XADDPIX),atemp0		; initial A2_FLAGS
-	store	atemp0,(a2_ptr)				; set A2_FLAGS
-	addqt	#(A2_PIXEL-A2_FLAGS),a2_ptr
-	store	srcaddr,(a1_ptr)
-	addqt	#4,a1_ptr			; move to A1_FLAGS
+		; TODO: store these somewhere?
+	store	atemp0,(a2_ptr)					; set A2_FLAGS
+	addqt	#(A2_PIXEL-A2_FLAGS),a2_ptr 	; reset to A2_PIXEL
+	store	srcaddr,(a1_ptr) 				; set A1_BASE
+	addqt	#4,a1_ptr						; == A1_FLAGS
 	movefa	countaddr,atemp1
-	store	bcount,(atemp1)			; set B_COUNT
+	store	bcount,(atemp1)					; set B_COUNT
 
 ;
 ; set the pattern data register to 0 for gouraud shade
 ;
-	movei	#B_PATD,atemp1
+
+	addqt 	#32,atemp1 			; B_COUNT -> B_PATD == 44 bytes
 	moveq	#0,atemp0
+	addqt 	#12,atemp1 			; == B_PATD
 	store	atemp0,(atemp1)
 	addqt	#4,atemp1
 	store	atemp0,(atemp1)
 
-	store	srcflags,(a1_ptr)
-	addqt	#(A1_INC-A1_FLAGS),a1_ptr
-	store	b_uinc,(a1_ptr)
-	addqt	#(A1_FINC-A1_INC),a1_ptr
-	store	b_vinc,(a1_ptr)
+	store	srcflags,(a1_ptr) 				; set A1_FLAGS
+	addqt	#(A1_INC-A1_FLAGS),a1_ptr 		; == A1_INC
+	store	b_uinc,(a1_ptr) 				; set A1_INC
+	addqt	#(A1_FINC-A1_INC),a1_ptr 		; == A1_FINC
+	store	b_vinc,(a1_ptr) 				; set A1_FINC
 	movefa	bi3addr,atemp0
-	subqt	#(A1_FINC-A1_PIXEL),a1_ptr
-	store	lefti,(atemp0)			; set up intensity
+	subqt	#(A1_FINC-A1_PIXEL),a1_ptr 		; reset to A1_PIXEL
+	store	lefti,(atemp0)					; set up B_I3 (intensity)
 
-	movei	#B_IINC,atemp1
-	store	b_iinc,(atemp1)
+	subqt 	#(B_I3-B_IINC),atemp0 			; == B_IINC
+	store	b_iinc,(atemp0)
 	store	bcmdval,(bcmd_ptr)		; start the first blit
 
 ;
@@ -244,23 +251,24 @@ texline1:
 	movei	#MIDBCMD,bcmdval
 
 	moveq	#3,atemp0
-	and	ay,atemp0
+	and		ay,atemp0
 .bwaitmid:
 	load	(bcmd_ptr),atemp1
 	btst	#0,atemp1
 	jr	EQ,.bwaitmid
 	nop
 
-	store	srcpix, (a1_ptr)		; set A1_PIXEL
-	addqt	#(A1_FPIXEL-A1_PIXEL),a1_ptr	; move to A1_FPIXEL
+	store	srcpix,(a1_ptr)					; set A1_PIXEL
+	addqt	#(A1_FPIXEL-A1_PIXEL),a1_ptr	; == A1_FPIXEL
 	store	atemp0,(a2_ptr)					; set A2_PIXEL to initial pixel to blit
-	store	srcfpix, (a1_ptr)
-	subqt	#(A1_FPIXEL-A1_PIXEL),a1_ptr
+	store	srcfpix,(a1_ptr) 				; set A1_FPIXEL
+	subqt	#(A1_FPIXEL-A1_PIXEL),a1_ptr 	; reset to A1_PIXEL
 ;
 ; set the pattern data register to $FFFFFFFF for future use
 ;
-	movei	#B_PATD,atemp1
-	movei	#$FFFFFFFF,atemp0
+	moveq 	#1,atemp0 				; movei	#$FFFFFFFF,atemp0
+	movei	#B_PATD,atemp1 
+	neg 	atemp0
 	store	atemp0,(atemp1)
 	addqt	#4,atemp1
 	store	atemp0,(atemp1)
@@ -345,40 +353,33 @@ texline2:
 	store	z0,(bz3_ptr)
 	subqt	#12,bz3_ptr
 
+	move 	bz3_ptr,atemp2
 	shlq	#2,b_zinc
-	movei	#B_ZINC,atemp2
+	subqt	#(B_Z3-B_ZINC),atemp2 	; == B_ZINC
 	store	b_zinc,(atemp2)
 
-	store	ay,(a1_ptr)			; set A1_PIXEL
-	subqt	#(A1_PIXEL-A1_BASE),a1_ptr
-	store	atemp0,(a2_ptr)			; set A2_PIXEL
-	subqt	#(A2_PIXEL-A2_FLAGS),a2_ptr
-	store	destaddr,(a1_ptr)		; set A1_BASE
-	addqt	#(A1_FLAGS-A1_BASE),a1_ptr	; move to A1_FLAGS
+	store	ay,(a1_ptr)					; set A1_PIXEL
+	subqt	#(A1_PIXEL-A1_BASE),a1_ptr 	; == A1_BASE
+	store	atemp0,(a2_ptr)				; set A2_PIXEL
+	subqt	#(A2_PIXEL-A2_FLAGS),a2_ptr ; == A2_FLAGS
+	store	destaddr,(a1_ptr)			; set A1_BASE
+	addqt	#(A1_FLAGS-A1_BASE),a1_ptr	; == A1_FLAGS
 	movei	#(PIXEL16|WID320|PITCH1|XADDPHR),atemp0		; final A2_FLAGS
-	store	atemp0,(a2_ptr)		; set A2_FLAGS
-	addqt	#(A2_PIXEL-A2_FLAGS),a2_ptr
-	store	destflags,(a1_ptr)
-	addqt	#(A1_PIXEL-A1_FLAGS),a1_ptr	; set A1_FLAGS
+	store	atemp0,(a2_ptr)				; set A2_FLAGS
+	addqt	#(A2_PIXEL-A2_FLAGS),a2_ptr ; reset to A2_PIXEL
+	store	destflags,(a1_ptr) 			; set A1_FLAGS
+	addqt	#(A1_PIXEL-A1_FLAGS),a1_ptr	; reset to A1_PIXEL
 	movefa	countaddr,atemp0
-	store	bcount,(atemp0)
-	store	bcmdval,(bcmd_ptr)		; start the blit
-
+	store	bcount,(atemp0)  			; set B_COUNT
+	store	bcmdval,(bcmd_ptr)			; start the final blit
 
 ;
 ; now set up for the next blit, which will be the source->GPU RAM
 ; blit
 ;
 
-	movei	#texline1,atemp1
-	shrq	#16,ay				; isolate just the Y value
-	subq	#1,anumlines
-	addqt	#1,ay				; increment it
-	jump	PL,(atemp1)
-	shlq	#16,ay				; put Y back in high word
-
-	movei	#texdone,atemp1
-	jump	(atemp1)
+	movei 	#texloop,atemp1 	; because the code which was here is duplicated below
+	jump 	(atemp1)
 	nop
 
 ;
@@ -403,6 +404,8 @@ texzerocount:
 	movefa	rightistep,atemp1
 	add	atemp0,rightz
 	add	atemp1,righti
+
+texloop:
 	movei	#texline1,atemp1
 	shrq	#16,ay				; isolate just the Y value
 	subq	#1,anumlines
@@ -417,21 +420,17 @@ texdone:
 ; mmult loses if there's a blit going on out of
 ; GPU RAM
 ;
+; TODO: are we blitting from GPU RAM?
+;
 .bwait:
 	load	(bcmd_ptr),atemp0
 	btst	#0,atemp0
 	jr	EQ,.bwait
 	nop
 
-	movei	#G_FLAGS,atemp1			; switch back to bank 1
-	load	(atemp1),atemp0
 	movefa	return,atemp2
-	bset	#14,atemp0
 	jump	(atemp2)
-	store	atemp0,(atemp1)			; the jump will flush the prefetch queue
-;	nop					; and take 3 cycles, giving time for the new flags
-;	nop					; to take effect
-	.REGBANK1
+	movefa 	gflags,atemp1 		; setup for the code we're returning to
 
 
 	.equrundef	z0
@@ -441,6 +440,5 @@ texdone:
 	.equrundef	srcpix
 	.equrundef	srcfpix
 
-	.equrundef	altbcount
 	.equrundef	countaddr
 	.equrundef	bi3addr

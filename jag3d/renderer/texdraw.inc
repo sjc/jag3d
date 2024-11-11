@@ -32,8 +32,14 @@ texpoly:
 ;	jr	EQ,.bwait
 ;	nop
 
+	; moved out of the loop below (because otherwise we're doing nothing in here)
+	;	...and it doesn't work. find out why...
+	;movei	#FIRSTBCMD,bcmdval
+
 	jump	(return)
 	nop
+
+
 
 
 ;**********************************************
@@ -44,26 +50,33 @@ texpoly:
 POLYdraw:
 textrap:
 
-	.REGBANK0				; we are entered in register bank 0
+	;.REGBANK0				; we are entered in register bank 0
 
 ;
 ; set up the destination registers
 ;
 
-	movei	#A2_BASE,atemp2
+	move 	a2_ptr,atemp2
+	subqt 	#(A2_PIXEL-A2_BASE),atemp2
 	store	destaddr,(atemp2)		; set A2_BASE
 
-	movei	#XADDPIX,atemp1
-	or		destflags,atemp1
-	movei	#A2_FLAGS,atemp2
-	store	atemp1,(atemp2)		; set A2_FLAGS
+	move 	destflags,atemp1
+	addqt	#(A2_FLAGS-A2_BASE),atemp2
+	bset	#16,atemp1 				; == #XADDPIX
+		; TODO: can we make this change when we setup destflags? does it hold
+		;	under all conditions apart from phrase-mode?
+	store	atemp1,(atemp2)			; set A2_FLAGS
+
 ;
 ; set up the source registers (or as many as we can)
 ;
-	movei	#A1_BASE,atemp2
+	move 	a1_ptr,atemp2
+	subqt 	#(A1_PIXEL-A1_BASE),atemp2
 	store	srcaddr,(atemp2)
-	movei	#XADDINC,atemp1
-	or		srcflags,atemp1
+
+	moveq	#3,atemp1 		; XADDINC == 0x00030000
+	shlq 	#16,atemp1
+	or		srcflags,atemp1	
 	addqt	#4,atemp2
 	store	atemp1,(atemp2)
 
@@ -134,16 +147,15 @@ texline1:
 ; calculate b_zinc
 ;
 	move	rightz,b_zinc		; find delta Z
-		; stall
 	sub		leftz,b_zinc
-		; stall
 	move	b_zinc,atemp0		; atemp0 will hold the fractional part of delta Z
 	sharq	#16,b_zinc		; put integer part of delta Z in low word
-	imult	atemp1,atemp0		; multiply fractional part by reciprocal of line length (a 14 bit number)
-	imult	atemp1,b_zinc		; multiply integer part by reciprocal of line length	(a 14 bit number)
+	imult	atemp1,atemp0		; multiply fractional part by reciprocal of line length
+								;	(a 14 bit number)
+	imult	atemp1,b_zinc		; multiply integer part by reciprocal of line length
+								;	(a 14 bit number)
 	sharq	#14,atemp0		; normalize fractional product
 	shlq	#2,b_zinc		; normalize integer product
-		; stall
 	add		atemp0,b_zinc
 ;
 ; now set up b_uinc so it is the integer part of A1_INC, b_vinc so it is the fractional part
@@ -164,6 +176,8 @@ texline1:
 	or		atemp1,b_vinc
 
 	movei	#FIRSTBCMD,bcmdval
+		; TODO: why can't we do this in the setup? if we try, nothing is drawn,
+		;	so work out what is borking this register
 
 .bwait:
 	load	(bcmd_ptr),atemp0
@@ -171,21 +185,30 @@ texline1:
 	jr	EQ,.bwait
 	nop
 
-	store	srcpix, (a1_ptr)		; set A1_PIXEL
-	addqt	#(A1_FPIXEL-A1_PIXEL),a1_ptr	; move to A1_FPIXEL
-	store	ay,(a2_ptr)			; set A2_PIXEL to destination pixel
-	store	srcfpix, (a1_ptr)
-	movei	#A1_INC,a1_ptr		; move to A1_INC
-	movei	#B_COUNT,atemp1
-	store	bcount,(atemp1)			; set B_COUNT
+	store	srcpix,(a1_ptr)					; set A1_PIXEL
+	addqt	#(A1_FPIXEL-A1_PIXEL),a1_ptr	; == A1_FPIXEL
 
-	store	leftz,(bz3_ptr)			; set up the Z value
-	store	b_uinc,(a1_ptr)
+	store	ay,(a2_ptr)						; set A2_PIXEL to destination pixel
+	addqt 	#(B_COUNT-A2_PIXEL),a2_ptr 		; == B_COUNT
+
+	store	srcfpix,(a1_ptr)
+	addqt 	#(A1_INC-A1_FPIXEL),a1_ptr 		; == A1_INC
+
+	store 	bcount,(a2_ptr) 				; set B_COUNT
+	subqt 	#(B_COUNT-A2_PIXEL),a2_ptr  	; reset to A2_PIXEL
+
+	store	b_uinc,(a1_ptr) 				; set A1_INC
 	addqt	#(A1_FINC-A1_INC),a1_ptr
-	store	b_vinc,(a1_ptr)
-	subqt	#(A1_FINC-A1_PIXEL),a1_ptr
-	movei	#B_ZINC,atemp2
+
+	store	leftz,(bz3_ptr)					; set up the Z value
+
+	store	b_vinc,(a1_ptr) 				; set A1_FINC
+	subqt	#(A1_FINC-A1_PIXEL),a1_ptr 	;	 reset to A1_PIXEL
+
+	move 	bz3_ptr,atemp2
+	subqt	#(B_Z3-B_ZINC),atemp2 		; == B_ZINC
 	store	b_zinc,(atemp2)
+
 	store	bcmdval,(bcmd_ptr)			; start the first blit
 
 
@@ -208,8 +231,8 @@ texzerocount:
 	add		atemp0,rightv
 	add		atemp1,rightu
 	movefa	rightzstep,atemp0
-		; stall
 	add		atemp0,rightz
+
 	movei	#texline1,atemp1
 	shrq	#16,ay				; isolate just the Y value
 	subq	#1,anumlines
@@ -224,21 +247,17 @@ texdone:
 ; mmult loses if there's a blit going on out of
 ; GPU RAM
 ;
+; TODO: Are we blitting out of GPU RAM here?
+;
 .bwait:
 	load	(bcmd_ptr),atemp0
 	btst	#0,atemp0
 	jr	EQ,.bwait
 	nop
 
-	movei	#G_FLAGS,atemp1			; switch back to bank 1
-	load	(atemp1),atemp0
 	movefa	return,atemp2
-	bset	#14,atemp0
 	jump	(atemp2)
-	store	atemp0,(atemp1)			; the jump will flush the prefetch queue
-;	nop					; and take 3 cycles, giving time for the new flags
-;	nop					; to take effect
-	.REGBANK1
+	movefa 	gflags,atemp1 		; setup for the code we're returning to
 
 
 	.equrundef	srcpix

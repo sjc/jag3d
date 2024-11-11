@@ -19,25 +19,14 @@ bzinc_ptr	.equr	leftv
 
 	.globl	gourpoly
 gourpoly:
-;
-; make sure the blitter is off
-;
-; commented-out because the calling code will have done the same just before jumping here
-;
-;	movefa	bcmd_ptr,temp0
-;.bwait:
-;	load	(temp0),temp1
-;	btst	#0,temp1
-;	jr	EQ,.bwait
-;	nop
 
-; considering the above, temp0 == bcmd_ptr
+	; the caller will have ensured that the blitter is not in use
+	; temp0 == bcmd_ptr
 
-	addqt	#4,temp0		; now temp0 = address of B_COUNT
+	addqt	#4,temp0		; now temp0 == B_COUNT
 	moveta	temp0,bcount_ptr
 
-	;movei	#B_I3,temp0 	; B_COUNT + 64 so could do 2 addq
-	addqt 	#32,temp0
+	addqt 	#32,temp0 		; == B_I3 == B_COUNT + 64
 	addqt 	#32,temp0
 
 	movei	#PATDSEL|GOURD|ZBUFF|ZMODEGT|DSTENZ|DSTWRZ|DSTEN|BKGWREN,temp1
@@ -45,23 +34,24 @@ gourpoly:
 	moveta	temp0,bi3_ptr
 	moveta	temp1,bcmdval
 
-	movefa	b_color,temp0
-	movei	#B_PATD,temp1
-	store	temp0,(temp1)
-	addqt	#4,temp1
-	store	temp0,(temp1)
+	movefa	b_color,temp1
+	subqt 	#(B_I3-B_PATD),temp0 	; == B_PATD
 
-	movefa	a1_ptr,temp2
+	store	temp1,(temp0)
+	addqt	#4,temp0
+
+		movefa	a1_ptr,temp2
+
+	store	temp1,(temp0)
+	
 	movefa	destaddr,temp1
 	subqt	#(A1_PIXEL-A1_BASE),temp2
 	store	temp1,(temp2)		; set A1_BASE
 	
 	movefa	destflags,temp1
-	addqt	#4,temp2
+	addqt	#4,temp2 			; == A1_FLAGS
 
-	;movei	#XADDPIX,temp0  	; XADDPIX = 0x00010000 
-	;or		temp1,temp0
-	bset 	#16,temp1
+	bset 	#16,temp1 			; XADDPIX == 0x00010000
 
 	jump	(return)
 	store	temp1,(temp2)		; set A1_FLAGS
@@ -75,29 +65,27 @@ gourpoly:
 ;
 	.globl	gourtrap
 gourtrap:
-	.REGBANK0
+	;.REGBANK0
 
 .if (^^defined PROFILING)
 	ADDTIME	POLYSETUP
 .endif
 
-	;movei	#B_ZINC,bzinc_ptr
-	;movei	#B_IINC,biinc_ptr
 	; do these need to be set every time through?
 	move 	bi3_ptr,bzinc_ptr
 	move 	bi3_ptr,biinc_ptr
-	subqt 	#8,bzinc_ptr
-	subqt	#12,biinc_ptr
+	subqt	#(B_I3-B_ZINC),bzinc_ptr
+	subqt	#(B_I3-B_IINC),biinc_ptr
 
 								; $FFFF0000
 	shrq	#16,ay				; strip fractional part of ay
-	movei	#gourline,traploop
+	move 	PC,traploop 		; adjusted below
 	shlq	#16,ay
 
 	subq	#1,anumlines
 	movei	#gourdone,atemp0
 	jump	MI,(atemp0)
-	nop
+	addqt 	#16,traploop 		; == gourline:
 
 gourline: 
 	move	leftx,atemp0			; branch optimization
@@ -106,7 +94,6 @@ gourline:
 	shrq	#16,bcount
 	or		atemp0,ay			; ay = destination pixel (Y|X)
 	sub		atemp0,bcount		; bcount = # of pixels to write
-
 
 	cmpq	#1,bcount
 	movei	#.zerocount,atemp1
@@ -196,15 +183,10 @@ gourdone:
 	ADDTIME	SCANLINES
 .endif
 
-	movei	#G_FLAGS,atemp1			; switch back to bank 1
-	load	(atemp1),atemp0
 	movefa	return,atemp2
-	bset	#14,atemp0
 	jump	(atemp2)
-	store	atemp0,(atemp1)			; the jump will flush the prefetch queue
-;	nop					; and take 3 cycles, giving time for the new flags
-;	nop					; to take effect
-	.REGBANK1
+	movefa 	gflags,atemp1 		; setup for the code we're returning to
+
 
 	.equrundef	bi3_ptr
 	.equrundef	bcount_ptr

@@ -32,6 +32,7 @@ tri			.equr	r28,1		; pointer to current triangle
 tricount	.equr	r29,1		; number of triangles left
 cam			.equr	r30,1		; pointer to output bitmap data
 
+gflags      .equr   r31,1       ; pointer to G_FLAGS
 
 ;
 ; Bank 0 temporary registers

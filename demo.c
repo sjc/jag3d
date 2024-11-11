@@ -225,6 +225,9 @@ main()
 		objects[i].transform.xpos = models[i].initx;
 		objects[i].transform.ypos = models[i].inity;
 		objects[i].transform.zpos = models[i].initz;
+
+		// This is only required for the "Gouraud Shaded Textures" rendered (TEXSHADE = 2)
+		// FixModelTextures(models[i].data);
 	}
 
 	camangles = (void *)((long)malloc(sizeof(Transform) + 3) & 0xFFFFFFFC);
@@ -238,12 +241,9 @@ main()
 	curframe = _timestamp;			/* timestamp is updated every vblank, and is elapsed time in 300ths of a second */
 	framespersecond = 1;
 
-	/* fix all model textures, and find maximum number of points */
+	/* find the maximum number of points in the models */
 	temp = 0;
 	for (i = 0; i < MODEL_COUNT; i++) {
-		// This is only required for the Gouraud Shaded Textures rendered (TEXSHADE = 2)
-		//FixModelTextures(models[i].data);
-		
 		// Check point count
 		if (models[i].data->numpoints > temp) {
 			temp = models[i].data->numpoints;

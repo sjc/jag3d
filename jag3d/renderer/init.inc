@@ -8,23 +8,22 @@
 ;
 ; make sure we're in bank 1
 ;
-    movei   #G_FLAGS,temp0
-        ; stall
-    load    (temp0),temp1
-        ; stall
-    bset    #14,temp1
-        ; stall
-    store   temp1,(temp0)
+    ;.REGBANK0
+    movei   #G_FLAGS,atemp0
+    load    (atemp0),atemp1
+    bset    #14,atemp1
+    store   atemp1,(atemp0)
     nop
     nop
-;   .REGBANK1
+    ;.REGBANK1
+
+    movefa  atemp0,gflags       ; store this in bank 1 for later
 
 ;
 ; we want 16.16 divides
 ;
     movei   #G_DIVCTRL,temp0
     moveq   #1,temp1
-        ; stall
     store   temp1,(temp0)
 
 ;
@@ -32,7 +31,6 @@
 ;
     subqt   #(G_DIVCTRL-G_MTXC),temp0       ; move to G_MTXC
     moveq   #4,temp1
-        ; stall
     store   temp1,(temp0)
 
 ;

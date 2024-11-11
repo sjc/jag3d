@@ -45,11 +45,17 @@ bptr        .equr   r14,1               ; indexed pointer which is free outside 
 
     load    (cam),temp1     ; get the blitter flags
     addqt   #4,cam
+        ; TODO: if we're only doing gouraud, we can set XADDPIX on destflags
+        ;   after we've used it to start the blitter
     moveta  temp1,destflags
 
     load    (cam),temp2     ; get the bitmap address
     addqt   #4,cam
     moveta  temp2,destaddr
+
+    ;
+    ; use the blitter to clear the screen and Z buffer
+    ;
 
     store   temp2,(bptr)    ; A1_BASE = buffer base address
         
@@ -208,34 +214,26 @@ zposn       .equr   r19,1
 
     ; store the camera matrix for use by objsetup
 
-    movei   #cammatrix,srcmat   ; load pointer now we're back from calculating the matrix
+iptr        .equr   r15,1   ; == yposn, which we haven't used
 
-    store   xrite,(srcmat)      ; store first word
-    addqt   #4,srcmat
-    store   xdown,(srcmat)
-    addqt   #4,srcmat
-    store   xhead,(srcmat)
-    addqt   #4,srcmat
-    store   temp0,(srcmat)      ; temp0 == xposn
-    addqt   #4,srcmat
+    movei   #cammatrix,iptr   ; load pointer now we're back from calculating the matrix
 
-    store   yrite,(srcmat)      ; store next word
-    addqt   #4,srcmat
-    store   ydown,(srcmat)
-    addqt   #4,srcmat
-    store   yhead,(srcmat)
-    addqt   #4,srcmat
-    store   temp1,(srcmat)      ; temp1 == yposn
-    addqt   #4,srcmat
+    store   xrite,(iptr)      ; store first word
+    store   xdown,(iptr+1)
+    store   xhead,(iptr+2)
+    store   temp0,(iptr+3)      ; temp0 == xposn
 
-    store   zrite,(srcmat)      ; store next word
-    addqt   #4,srcmat
-    store   zdown,(srcmat)
-    addqt   #4,srcmat
-    store   zhead,(srcmat)
-    addqt   #4,srcmat
-    store   temp2,(srcmat)      ; temp2 == zposn
+    store   yrite,(iptr+4)      ; store next word
+    store   ydown,(iptr+5)
+    store   yhead,(iptr+6)
+    store   temp1,(iptr+7)      ; temp1 == yposn
 
+    store   zrite,(iptr+8)      ; store next word
+    store   zdown,(iptr+9)
+    store   zhead,(iptr+10)
+    store   temp2,(iptr+11)      ; temp2 == zposn
+
+    .equrundef  iptr
 
 ;
 ; all done for now, kill the GPU

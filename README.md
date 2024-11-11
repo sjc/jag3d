@@ -74,10 +74,10 @@ At the start of each frame, after swapping the screen buffers and making any upd
 
 Each object is rendered to the current buffer using `RenderObject()`. This takes as parameters:
 
-    * A pointer to the model data 'N3DObjdata`
-    * A pointer to the object `Transform`
-    * A pointer to the lights struct
-    * A pointer to scratch memory which the GPU will use for transformed points. It should have enough room for `sizeof(TPoint)` bytes for each point in your largest model. (See example code for pre-allocating a buffer.)
+- A pointer to the model data 'N3DObjdata`
+- A pointer to the object `Transform`
+- A pointer to the lights struct
+- A pointer to scratch memory which the GPU will use for transformed points. It should have enough room for `sizeof(TPoint)` bytes for each point in your largest model. (See example code for pre-allocating a buffer.)
 
 *Note:* Since the GPU will be reading data from (and in the case of the scratch memory, writing data to) each of the areas of memory these pointers point to, it is essential to have them aligned on longword (4 byte) boundaries. The best approach for this would be to allocate them in an assembly language file's `.bss` section with `.long` alignment. Next best is the approach shown in the demo code, where `malloc()` is used to request a buffer slightly larger than required, the address of which is then aligned.
 
@@ -89,8 +89,8 @@ Multiple renderers should be possible by duplicating the main `renderer.s` file,
 
 ## TODO
 
-- Fix issue where wireframe renderer draws a line across top and bottom of the screen
+- Fix issue where wireframe renderer draws a line along screen edges where faces are clipped
 - Optomise GPU code, particularly with respect to instruction order
 - Investigate using GPU memory or CLUT as scratch space for low-point models
-- Move bitmap clearing blitter code into `frameinit`
-- Move sin and cos lookup code onto the GPU
+- Investigate whether texdraw.inc and texdraw2.inc need to wait for the blitter to finish before returning
+- Find constants which can be pre-loaded into spare registers

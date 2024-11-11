@@ -12,9 +12,14 @@ endloop		.equr	r8
 bfculladdr	.equr	r9
 material	.equr	r10
 
+;
+; code will jump back here after rendering each polygon
+; tricount keeps count of whether there are more polygons to check
+;
+
 	movei	#G_MTXA,g_mtxa
 	movei	#_GPUcampos,campos
-	moveta	g_mtxa,altgmtxa  	; TODO: can we set this up in a global during init()?
+	moveta	g_mtxa,altgmtxa
 	movei	#endtriloop,endloop
 
 bfcull:

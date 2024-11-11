@@ -26,17 +26,16 @@ ptcount     .equr   r6,1
 points      .equr   r7,1
 matlist     .equr   r8,1                ; pointer to material list
 
+iptr        .equr   r14,1
+
 ;
 ; load up our parameters
 ;
-    movei   #_params,temp0
-    load    (temp0),objdata         ; get pointer to object data
-    addqt   #4,temp0            ; 
-    load    (temp0),objmat          ; get pointer to object angles
-    addqt   #4,temp0
-    load    (temp0),srclmodel       ; get pointer to source lighting model
-    addqt   #4,temp0
-    load    (temp0),tpoints         ; get pointer to "tpoints" array
+    movei   #_params,iptr
+    load    (iptr),objdata         ; get pointer to object data
+    load    (iptr+1),objmat          ; get pointer to object angles
+    load    (iptr+2),srclmodel       ; get pointer to source lighting model
+    load    (iptr+3),tpoints         ; get pointer to "tpoints" array
 
 ;
 ; load object data information
@@ -56,20 +55,19 @@ matlist     .equr   r8,1                ; pointer to material list
 
 ;
 ; save points, tpoints, and materials
+; in renderer.s:
+;   gnumpoints
+;   gpoints
+;   gtpoints
+;   materialtable
 ;
-    movei   #gnumpoints,temp0       ; store numpoints, points and tpoints
-    store   ptcount,(temp0)
-    addqt   #4,temp0
-    store   points,(temp0)
-    addqt   #4,temp0
-    store   tpoints,(temp0)
-    addqt   #4,temp0
-    store   matlist,(temp0)         ; store texture list table
+    movei   #gnumpoints,iptr       ; store numpoints, points and tpoints
+    store   ptcount,(iptr)         ; 
+    store   points,(iptr+1)
+    store   tpoints,(iptr+2)
+    store   matlist,(iptr+3)         ; store texture list table
 
-    .equrundef  tpoints
-    .equrundef  ptcount
-    .equrundef  points
-    .equrundef  matlist
+    .equrundef  iptr
 
 ;
 ; clear the point transformation array
@@ -83,33 +81,45 @@ matlist     .equr   r8,1                ; pointer to material list
     ; not using phase mode may even be slower
     ; TODO: look into just clearing the first phase
 
-    ; TODO: see whether we could do this with a tight code loop
+bptr        .equr   r14,1               ; indexed pointer which is free outside matrix use
 
     moveq   #0,temp0
     movefa  a1_ptr,temp2
     store   temp0,(temp2)       ; A1_PIXEL = 0
+    
     subqt   #(A1_PIXEL-A1_BASE),temp2
-    movei   #gtpoints,temp1
-    load    (temp1),temp1
-    movei   #(PIXEL8|WID16|PITCH1|XADDPIX),temp0        ; flags for the blit 
-        ; XADDPHR
-    store   temp1,(temp2)       ; A1_BASE = tpoints
-    addqt   #4,temp2
+    ; because we haven't over-written this yet
+    store   tpoints,(temp2)     ; A1_BASE = address of tpoints scratch space
+
+    addqt   #(A1_FLAGS-A1_BASE),temp2
+    movei   #(PIXEL8|WID16|PITCH1|XADDPHR),temp0        ; flags for the blit
+        ; = 0x00000018 | 0x00002000 | 0x00000000 | 0x00000000
+        ; = 0x00000018 | 0x00002000
+        ; = 0x00002018
     store   temp0,(temp2)       ; A1_FLAGS = temp0
-    movei   #A1_STEP,temp2
-    ;movei   #$0001FFF0,temp0 ; draw 4, step = -4
-    movei   #$0001FFFC,temp0
+    
+    addqt   #(A1_STEP-A1_FLAGS),temp2
+    movei   #$0001FFF0,temp0 ; draw 4, step = -4
     store   temp0,(temp2)       ; A1_STEP = -16 in X, 1 in Y
-    movei   #gnumpoints,temp1
-    load    (temp1),temp1
-    shlq    #16,temp1       ; number of lines is = to the number of points
-    ;bset    #4,temp1        ; number of "pixels" per line is 16
-    bset    #2,temp1
-    movei   #B_COUNT,temp2
-    store   temp1,(temp2)
+    
+        addqt   #(A2_PIXEL-A1_STEP),temp2   ; increase pointer in two steps, cheaper than movei
+    ; because we haven't trashed this yet
+    shlq    #16,ptcount
+        addqt   #(B_COUNT-A2_PIXEL),temp2
+    bset    #4,ptcount  ; 16 pixels per row
+
+    store   ptcount,(temp2)
+
     subqt   #(B_COUNT-B_CMD),temp2
-    movei   #LFU_ONE|UPDA1,temp1
+    movei   #LFU_ONE|UPDA1,temp1    ; = 0x01E00000 | 0x00000200 = 0x01E00200
     store   temp1,(temp2)
+
+    .equrundef  bptr    ; finished with these
+
+    .equrundef  tpoints
+    .equrundef  ptcount
+    .equrundef  points
+    .equrundef  matlist
 
 ;*
 ; set up the various transformation matrices
@@ -254,9 +264,9 @@ col4b       .equr   r7,0
     imacn   zhead,zposn
     resmac  temp2           ; will be new value for zposn
 
-    neg temp0
-    neg temp1
-    neg temp2
+    neg     temp0
+    neg     temp1
+    neg     temp2
     sharq   #14,temp0
     sharq   #14,temp1
     sharq   #14,temp2
@@ -515,33 +525,28 @@ one     .equr   r21,1
 ; store matrix into _GPUM
 ;
 
-    movei   #_GPUM,srcmat
+iptr        .equr   r15,1   ; == yposn
 
-    store   xrite,(srcmat)
-    addqt   #4,srcmat
-    store   xdown,(srcmat)
-    addqt   #4,srcmat
-    store   xhead,(srcmat)
-    addqt   #4,srcmat
-    store   xposn,(srcmat)
-    addqt   #4,srcmat
+    ; iptr == yposn, so move that value aside
+    move    yposn,temp0
+    movei   #_GPUM,iptr
 
-    store   yrite,(srcmat)
-    addqt   #4,srcmat
-    store   ydown,(srcmat)
-    addqt   #4,srcmat
-    store   yhead,(srcmat)
-    addqt   #4,srcmat
-    store   yposn,(srcmat)
-    addqt   #4,srcmat
+    store   xrite,(iptr)
+    store   xdown,(iptr+1)
+    store   xhead,(iptr+2)
+    store   xposn,(iptr+3)
 
-    store   zrite,(srcmat)
-    addqt   #4,srcmat
-    store   zdown,(srcmat)
-    addqt   #4,srcmat
-    store   zhead,(srcmat)
-    addqt   #4,srcmat
-    store   zposn,(srcmat)
+    store   yrite,(iptr+4)
+    store   ydown,(iptr+5)
+    store   yhead,(iptr+6)
+    store   temp0,(iptr+7)  ; reg we reused as pointer
+
+    store   zrite,(iptr+8)
+    store   zdown,(iptr+9)
+    store   zhead,(iptr+10)
+    store   zposn,(iptr+11)
+
+    .equrundef  iptr
 
 ;
 ; This file will be included inline with the renderer, so here we fall through to the rest of the code
