@@ -5,7 +5,11 @@
 ;
 ;
 
+.if TRANSPARENTTEX
+FIRSTBCMD	=	(SRCEN|LFU_S|DSTEN|DSTENZ|DSTWRZ|ZMODEGT|ZBUFF|DSTA2|BKGWREN|DCOMPEN)
+.else
 FIRSTBCMD	=	(SRCEN|LFU_S|DSTEN|DSTENZ|DSTWRZ|ZMODEGT|ZBUFF|DSTA2|BKGWREN)
+.endif
 
 srcpix		.equr	righti			; next value for A1_PIXEL
 srcfpix		.equr	b_color			; next value for A1_FPIXEL
@@ -19,22 +23,24 @@ srcfpix		.equr	b_color			; next value for A1_FPIXEL
 	.globl	POLYinit
 POLYinit:
 texpoly:
-;
-; make sure the blitter is off
-;
-; commented-out because the calling code will have done the same just before jumping here
-; will remove the jump here entirely
-;
-;	movefa	bcmd_ptr,temp0
-;.bwait:
-;	load	(temp0),temp1
-;	btst	#0,temp1
-;	jr	EQ,.bwait
-;	nop
 
-	; moved out of the loop below (because otherwise we're doing nothing in here)
-	;	...and it doesn't work. find out why...
-	;movei	#FIRSTBCMD,bcmdval
+	; the calling code will have ensured the blitter has finished
+
+	movei	#FIRSTBCMD,temp0
+	moveta 	temp0,bcmdval
+
+.if TRANSPARENTTEX
+.if TRANSPARENTPIXEL
+	moveq 	#1,temp0
+	neg 	temp0
+.else
+	moveq 	#0,temp0
+.endif
+	movei	#B_PATD,temp1 		; == B_PATD
+	store 	temp0,(temp1)
+	addqt 	#4,temp1
+	store 	temp0,(temp1)
+.endif
 
 	jump	(return)
 	nop
@@ -174,10 +180,6 @@ texline1:
 		; replace with AND $FFFF0000,atemp1
 		; stall
 	or		atemp1,b_vinc
-
-	movei	#FIRSTBCMD,bcmdval
-		; TODO: why can't we do this in the setup? if we try, nothing is drawn,
-		;	so work out what is borking this register
 
 .bwait:
 	load	(bcmd_ptr),atemp0

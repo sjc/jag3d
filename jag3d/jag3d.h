@@ -33,6 +33,11 @@ void RenderObjectCustom(void *gpufunc, N3DObjdata *data, Transform *trans, Light
 // clears a screen buffer and its associated z-buffer
 void ClearBuffer(Bitmap *buf);
 
+// Return an 'angle' in the range 0-2047 representing the rotation defined by the
+//  vector. The parameter names `x` and `y` are just placeholders, the angle can
+//  be defined in any 2D plane.
+short AngleAlongVector(short x, short y);
+
 /*
  * Transforms
  */
@@ -48,5 +53,18 @@ void ClearBuffer(Bitmap *buf);
 
 void FixTexture(Bitmap *texture);
 void FixModelTextures(N3DObjdata *model);
+
+/*
+ * 3D Sprites
+ */
+
+// == sizeof(N3DObjdata)
+//  + 4                     padding so that the facelist is also phrase aligned
+//  + sizeof(Face)
+//  + 4                     the sprite is a rect therefore the Face has an extra point
+//  + 4 * sizeof(Point)
+#define SIZEOF_3DSPRITE     (24+28+48)  // == 
+
+void Init3DSprite(N3DObjdata *sprite, Material *texture, short width, short height);
 
 #endif // JAG3D_H

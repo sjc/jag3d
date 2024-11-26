@@ -54,17 +54,8 @@ bi3addr		.equr	temp2		; address of B_I3
 
 	.globl	texpoly
 texpoly:
-;
-; make sure the blitter is off
-;
-; commented-out because the calling code will have done the same just before jumping here
-;
-;	movefa	bcmd_ptr,temp0
-;.bwait:
-;	load	(temp0),temp1
-;	btst	#0,temp1
-;	jr	EQ,.bwait
-;	nop
+
+	; the calling code will have ensured the blitter has finished
 
 ;
 ; set up the destination registers
@@ -263,15 +254,26 @@ texline1:
 	store	atemp0,(a2_ptr)					; set A2_PIXEL to initial pixel to blit
 	store	srcfpix,(a1_ptr) 				; set A1_FPIXEL
 	subqt	#(A1_FPIXEL-A1_PIXEL),a1_ptr 	; reset to A1_PIXEL
+
 ;
-; set the pattern data register to $FFFFFFFF for future use
+; set the pattern data register to $FFFFFFFF or $00000000 for the last 
+;	blit, depending on whether we're using CrY $FFFF or $0000 as the 
+;	transparent pixel colour
 ;
+.if TRANSPARENTPIXEL = 1
 	moveq 	#1,atemp0 				; movei	#$FFFFFFFF,atemp0
 	movei	#B_PATD,atemp1 
 	neg 	atemp0
 	store	atemp0,(atemp1)
 	addqt	#4,atemp1
 	store	atemp0,(atemp1)
+.else
+	moveq 	#0,temp0
+	movei	#B_PATD,temp2
+	store	temp0,(temp2)
+	addqt	#4,temp2
+	store	temp0,(temp2)
+.endif
 
 	movefa	countaddr,atemp0
 	store	bcount,(atemp0)			; set B_COUNT

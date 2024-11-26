@@ -110,6 +110,28 @@ MINZ		=	8
 ;TEXSHADE2BUF = $1ef000
 TEXSHADE2BUF = 0
 
+;
+; TRANSPARENTTEX
+; For "Unshaded Textures" only, treat the CrY pixel colour chosen by
+; TRANSPARENTPIXEL as transparent when drawing a texture. The other
+; texture-mapping modes do this implicitly as part of the multi-buffer
+; approach
+;
+TRANSPARENTTEX = 1
+
+;
+; TRANSPARENTPIXEL
+; Choose which CrY colour is trated as transparent when drawing textures.
+; This only affects the "Unshaded Textures" renderer if TRANSPARENTTEX is
+; set to 1. For the other two texture-mapping renderers, it modifies the
+; pre-existing behaviour
+;
+; Set to 1 to select CrY $1111 (yellow) -- which is the default -- or to 
+; 0 to select CrY $0000 (black)
+;
+TRANSPARENTPIXEL = 0
+
+
 	.include 	'jaguar.inc'
 ;
 ; GPU code for doing polygon rendering

@@ -80,6 +80,28 @@ extern short DISPBUF0[], DISPBUF1[];
 /* the font we'll use for printing stuff on screen */
 extern FNThead usefnt[];
 
+/* for 3D sprite examples */
+extern N3DObjdata jaguar_logo_3d_sprite;
+extern Material jaguar_logo_material;
+
+#define JAGUAR_LOGO_WIDTH  512
+#define JAGUAR_LOGO_HEIGHT 128
+
+extern N3DObjdata explosion_3d_sprite;
+extern Material explosion_0_material, explosion_1_material, explosion_2_material, explosion_3_material;
+
+#define EXPLOSION_COUNT 	4
+
+Material *explosion_material[EXPLOSION_COUNT] = {
+	&explosion_0_material,
+	&explosion_1_material,
+	&explosion_2_material,
+	&explosion_3_material,
+};
+
+#define EXPLOSION_WIDTH 	64
+#define EXPLOSION_HEIGHT 	64
+
 /* 3D object data */
 extern N3DObjdata ship1data, globedata, radardata, torusdata, knightdata, robotdata, castledata, cubedata;
 
@@ -155,7 +177,7 @@ Bitmap scrn2 = {
 };
 
 Lightmodel lightm = {
-	0x0000,
+	0x4000,
 	1,
 	{
 	  { -0x24f3, -0x24f3, -0x24f3, 0x4000 },
@@ -166,6 +188,19 @@ Lightmodel lightm = {
 	}
 };
 
+Lightmodel nolightm = {
+	0x8000,
+	0,
+	{
+	  { -0x24f3, -0x24f3, -0x24f3, 0x4000 },
+	  { 0, 0, 0, 0xC000 },
+	  { 0x4000, 0, 0, 0x4000 },
+	  { 0, 0x4000, 0, 0x4000 },
+	  { 0, 0, 0x4000, 0x4000 },
+	}
+};
+
+extern short vectors_100[];
 
 /****************************************************************
  *	Global variables					*
@@ -195,10 +230,13 @@ main()
 	long framespersecond;	/* frames per second counter */
 	long time;					/* elapsed time */
 	
-	char buf[256];			/* scratch buffer for sprintf */
+	char buf[256];				/* scratch buffer for sprintf */
 
-	N3DObject *objects; 	/* objects which will be drawn each frame */
-	TPoint *tpoints; 					/* scratch space for GPU point transforms */
+	N3DObject *objects; 		/* objects which will be drawn each frame */
+	TPoint *tpoints; 			/* scratch space for GPU point transforms */
+	Transform *jaguar_logo_trans;
+	Transform *explosion_trans;
+	short explosion_frame, explosion_frame_count;
 
 	/* build packed versions of the two object lists */
 	/* (output is double buffered)			 */
@@ -234,8 +272,35 @@ main()
 
 	/* set up the viewer's position */
 	camangles->alpha = camangles->gamma = 0;
-	camangles->beta = 256;
+	camangles->beta = 0;
 	camangles->xpos = camangles->ypos = camangles->zpos = 0;
+
+	/* setup the logo 3d sprite */
+	Init3DSprite(&jaguar_logo_3d_sprite, &jaguar_logo_material, JAGUAR_LOGO_WIDTH, JAGUAR_LOGO_HEIGHT);
+	jaguar_logo_trans = (void *)((long)malloc(sizeof(Transform) + 3) & 0xFFFFFFFC);
+	jaguar_logo_trans->xpos = 0;
+	jaguar_logo_trans->ypos = 0;
+	jaguar_logo_trans->zpos = 2000;
+	jaguar_logo_trans->alpha = 0;
+	jaguar_logo_trans->beta = 1024;
+	jaguar_logo_trans->gamma = 0;
+
+	// This is only required for the "Gouraud Shaded Textures" rendered (TEXSHADE = 2)
+	// FixTexture(jaguar_logo_material.tmap);
+
+	/* setup the explosion 3D sprite -- not shown yet */
+	Init3DSprite(&explosion_3d_sprite, &explosion_0_material, EXPLOSION_WIDTH, EXPLOSION_HEIGHT);
+	explosion_trans = (void *)((long)malloc(sizeof(Transform) + 3) & 0xFFFFFFFC);
+	jaguar_logo_trans->ypos = 0;
+	jaguar_logo_trans->alpha = 0;
+	jaguar_logo_trans->gamma = 0;
+	explosion_frame = -1;
+	explosion_frame_count = 0;
+
+	// This is only required for the "Gouraud Shaded Textures" rendered (TEXSHADE = 2)
+	// for (i = 0; i < EXPLOSION_COUNT; i++) {
+	// 	FixTexture(explosion_material[i]->tmap);
+	// }
 
 	/* initialize timing information */
 	curframe = _timestamp;			/* timestamp is updated every vblank, and is elapsed time in 300ths of a second */
@@ -280,6 +345,31 @@ main()
 			RenderObject(objects[i].data, &objects[i].transform, &lightm, tpoints);
 		}
 
+		// 'billboard' the 3D sprite so it's always square-on to the camera
+		jaguar_logo_trans->beta = AddRotation(camangles->beta, 1024);
+
+		RenderObject(&jaguar_logo_3d_sprite, jaguar_logo_trans, &nolightm, tpoints);
+
+		if (explosion_frame != -1) {
+			// rotate the sprite to face towards the camera
+			explosion_trans->beta = AngleAlongVector(
+				camangles->xpos - explosion_trans->xpos,
+				camangles->zpos - explosion_trans->zpos
+			);
+
+			RenderObject(&explosion_3d_sprite, explosion_trans, &nolightm, tpoints);
+			
+			// animate the explosion by changing the material applied to the sprite
+			if (++explosion_frame_count == 2) {
+				if (++explosion_frame == EXPLOSION_COUNT) {
+					explosion_frame = -1; // stop showing
+				} else {
+					explosion_3d_sprite.materials = explosion_material[explosion_frame];
+				}
+				explosion_frame_count = 0;
+			}
+		}
+
 		time = clock() - time;
 
 		/* debug status display */
@@ -288,7 +378,7 @@ main()
 		FNTstr(20, 0, buf, curwindow->data, curwindow->blitflags, usefnt, 0x27ff, 0 );
 
 		/* use this one for whatever you like */
-		sprintf(buf, "Left/right to rotate, up/down to raise/lower");
+		sprintf(buf, "L/R: rotate, U/D: forward/back, 4/6: left/right");
 		FNTstr(20, 12, buf, curwindow->data, curwindow->blitflags, usefnt, 0xf0ff, 0 );
 
 		/* buts will contain all buttons currently pressed */
@@ -304,20 +394,64 @@ main()
 
 		// left/right rotates the camera around the y axis
 		if (buts & JOY_LEFT) {
-			camangles->beta = SubRotation(camangles->beta, 4);
+			camangles->beta = SubRotation(camangles->beta, 8);
 		} else if (buts & JOY_RIGHT) {
-			camangles->beta = AddRotation(camangles->beta, 4);
+			camangles->beta = AddRotation(camangles->beta, 8);
 		}
 
-		// up/down raises or lowers the camera
+		// up/down moves forward and back
 		if (buts & JOY_UP) {
-			camangles->ypos -= 4;
-			camangles->alpha = SubRotation(camangles->alpha,2);
+			short index = camangles->beta << 1;
+			camangles->xpos += vectors_100[index];
+			camangles->zpos += vectors_100[index+1];
 		} else if (buts & JOY_DOWN) {
-			camangles->ypos += 4;
-			camangles->alpha = AddRotation(camangles->alpha,2);
+			short index = camangles->beta << 1;
+			camangles->xpos -= vectors_100[index];
+			camangles->zpos -= vectors_100[index+1];
 		}
-	
+
+		// 4/6 LT/RT sidesteps
+		if (buts & KEY_4) {
+			short index = SubRotation(camangles->beta, 512) << 1;
+			camangles->xpos += vectors_100[index];
+			camangles->zpos += vectors_100[index+1];
+		} else if (buts & KEY_6) {
+			short index = AddRotation(camangles->beta, 512) << 1;
+			camangles->xpos += vectors_100[index];
+			camangles->zpos += vectors_100[index+1];
+		}
+
+		// 1/7 move the camera up/down
+		if (buts & KEY_1) {
+			camangles->ypos -= 100;
+		} else if (buts & KEY_7) {
+			camangles->ypos += 100;
+		}
+
+		// 3/9 angle the camera up/down
+		if (buts & KEY_3) {
+			camangles->alpha = SubRotation(camangles->alpha, 8);
+		} else if (buts & KEY_9) {
+			camangles->alpha = AddRotation(camangles->alpha, 8);
+		}
+
+		if (buts & KEY_5) {
+			camangles->xpos = camangles->ypos = camangles->zpos = 0;
+			camangles->alpha = camangles->beta = camangles->gamma = 0;
+		}
+
+		// button A triggers an explosion
+		if (buts & FIRE_A && explosion_frame == -1) {
+			// position the explosion in front of the camera at a distance
+			short index = camangles->beta << 1;
+			explosion_trans->xpos = camangles->xpos + (vectors_100[index] << 2);
+			explosion_trans->zpos = camangles->zpos + (vectors_100[index+1] << 2);
+			explosion_frame = 0;
+			explosion_frame_count = 0;
+			explosion_3d_sprite.materials = explosion_material[0];
+		}
+
+
 		/* display the buffer we just drew */
 		OLPset(drawbuf ? packed_olist2 : packed_olist1);
 

@@ -44,17 +44,8 @@ bi3addr		.equr	temp2		; address of B_I3
 
 	.globl	texpoly
 texpoly:
-;
-; make sure the blitter is off
-;
-; commented-out because the calling code will have done the same just before jumping here
-;
-;	movefa	bcmd_ptr,temp0
-;.bwait:
-;	load	(temp0),temp1
-;	btst	#0,temp1
-;	jr	EQ,.bwait
-;	nop
+
+	; the calling code will have ensured the blitter has finished
 
 ;
 ; set up the destination registers
@@ -66,12 +57,16 @@ texpoly:
 		; TODO: does anything else change A2_BASE? can we set this up once for this renderer?
 
 ;
-; set the pattern data register to -1 for comparison with
-; end of line
+; set the pattern data register to the value we've chose as the transparent
+;	pixel for comparison with end of line
 ;
-	moveq	#1,temp0
+.if TRANSPARENTPIXEL 			; == CrY $FFFF
+	moveq 	#1,temp0
+	neg 	temp0
+.else 							; == CrY $0000
+	moveq 	#0,temp0
+.endif
 	movei	#B_PATD,temp2 		; TODO: find a quicker/shorter way to do this
-	neg		temp0
 	store	temp0,(temp2)
 	addqt	#4,temp2
 	store	temp0,(temp2)
@@ -337,9 +332,14 @@ texline1:
 	nop
 
 	load	(atemp1),atemp0		; load the first 2 words of the blit
+.if TRANSPARENTPIXEL 			; == CrY $FFFF
 	shlq	#15,atemp0		; then fill the first word with $FFFF
 	bset	#31,atemp0		; by setting a bit and sign extending it
 	sharq	#15,atemp0
+.else 							; == CrY $0000
+	shlq 	#16,atemp0 		; then fill the first word with $0000
+	shrq 	#16,atemp0
+.endif
 	store	atemp0,(atemp1)		; store back the first 2 words
 	moveq	#3,atemp0		; now re-calculate atemp0 as the
 	jr	dosecondblit

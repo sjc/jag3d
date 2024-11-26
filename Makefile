@@ -49,12 +49,12 @@ $(LIBJAG): $(LIBOBJS)
 #
 # These are the files unique to the current project
 #
-SRCOBJS = miscasm.o demo.o
+SRCOBJS = miscasm.o demo.o vectors.o storage.o
 
 #
 # Objects built by the 3D library code
 #
-JAG3D_OBJS = $(JAG3D)/jag3d.o $(JAG3D_LIB)/sincos.o $(JAG3D_REND)/renderer.o 
+JAG3D_OBJS = $(JAG3D)/jag3d.o $(JAG3D_LIB)/utils.o $(JAG3D_LIB)/sincos.o $(JAG3D_LIB)/3d_sprite_template.o $(JAG3D_REND)/renderer.o 
 
 #
 # Building the renderer requires additional parameters to find its .inc files

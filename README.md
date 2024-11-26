@@ -34,6 +34,15 @@ The demo will run with [the BigPEmu](https://www.richwhitehouse.com/jaguar/) emu
 
 This code has been tested on genuine Jaguar hardware and found to work just fine.
 
+Controls:
+
+- D-pad up/down: Move forward/back
+- D-pad left/right: Rotate
+- 4/6 or left trigger/right trigger: move left/right
+- 1/7: move up/down
+- 3/9: look up/down (rotate camera around x axis)
+- A: explosion
+
 ## Models
 
 Each model should be places in its own directory under `/models`. The build process will try to build a model from the files inside each directory. To exclude a directory, prefix its name with `_`.
@@ -68,7 +77,7 @@ If the "Gouraud Shaded Textures" version is used, the `FixModelTextures()` funct
 
 Load the renderer into GPU memory with `LoadAndInitRenderer()`. This takes no parameters and will load and initialise the default renderer, built from `renderer.s`. 
 
-If you are not using the GPU for anything else, you can be load and initialise the rendering code once eg. before entering your main game loop. Once the init code has been run it is no longer needed and the space it occupied if freed-up for use by the renderer.
+If you are not using the GPU for anything else, you can be load and initialise the rendering code once eg. before entering your main game loop. Once the initialisation code has been run it is no longer needed and the space it occupied if freed-up for use by the renderer.
 
 At the start of each frame, after swapping the screen buffers and making any updates to the camera's position and orientation, call `SetupFrame()`. This sets up the camera matrix used by all subsequent calls to the object rendering function.
 
@@ -86,6 +95,37 @@ Each object is rendered to the current buffer using `RenderObject()`. This takes
 ## Multiple Renderers
 
 Multiple renderers should be possible by duplicating the main `renderer.s` file, renaming the exposed symbols (`renderer_code`, `renderer_init`, `renderer_frameinit` and `renderer_objinit`) and using the `…Custom()` versions of the functions described above. This has not yet been tested. It will be documented once it has.
+
+## 3D Sprites and Billboards
+
+A 3D sprite is a very simple model, just a rectangle with a texture mapped to one face. They can be used to introduce simple images into the 3D scene, such as projectiles and explosions. The library provides a helper function to setup a 3D sprite, `Init3DSprite()`. This takes as parameters:
+
+- The memory to hold the model data, which should be `SIZEOF_3DSPRITE` bytes and phrase aligned
+- The width and height of the sprite in world units
+- A pointer to the `Material` to use as the image
+
+The `Material` should be phrase aligned. It in turn includes a pointer to a `Bitmap` object which defines the size of the image used and contains a pointer to the image data.
+
+Image data can be imported via the /models directory. Any `.tga` file included in a sub-directory will be imported with the symbol name the same as the filename, preceded by an underscore (eg. `my_texture.tga` will be imported as `_my_texture`). These image files do not need to be associated with a model (see the /models/textures directory in the example project).
+
+3D sprites can be drawn with transparency, allowing them to have cut-out sections and irregular edges. There are a couple of settings within `renderer.s` which control this behaviour.
+
+`TRANSPARENTTEX` will turn texture transparency on and off for the "Unshaded Textures" renderer. The other two texture renderers get transparency by default as a side-effect of the multi-pass technique used to implement them.
+
+`TRANSPARENTPIXEL` is used to choose which CrY colour is to be treated as transparent.
+
+If `TRANSPARENTPIXEL = 1` then CrY colour 0xFFFF (a shade of yellow) is treated as transparent. A range of RGB colours map to this CrY value. Since this is the default used by the "Flat Shaded Textures" and "Gouraud Shaded Textures" renderers, it's possible to accidentally introduce transparency when it is not expected.
+
+If `TRANSPARENTPIXEL = 0` then CrY colour 0xFFFF (black) is treated as transparent. Only RGB 0,0,0 maps to this CrY value, so it's probably the better choice for transparency, especially if using it for yellow-ish things like explosions. You can still use other almost-black colours in the same texture and they will not be treated as transparent.
+
+A further complication when using either the "Flat Shaded Textures" or the "Gouraud Shaded Textures" is that the shading they apply will probably change the chosen transparent colour before it is removed, which happens in the last of their multiple steps. To avoid this, transparent 3D sprites should be rendered using a light model with 0 point lights. You can achieve this by defining a separate light model (see the demo code). You will probably want to increase the strength of the ambient light in this model to brighten the texture.
+
+3D sprites can be made to behave like simple 'billboards' and always face towards the camera, rotating around their y axis, in one of two ways:
+
+- set the sprite's transform's `beta` to the camera's `beta` + 1024. This will give a billboard which is always square-on to the camera.
+- set the sprite's transform's `beta` property using `AngleAlongVector()`. This will give a billboard which faces towards the camera.
+
+See the demo code for examples of both approaches.
 
 ## TODO
 
