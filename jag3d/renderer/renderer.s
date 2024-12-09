@@ -136,6 +136,7 @@ TRANSPARENTPIXEL = 0
 ; the GPU has free
 ; TODO: list renderer modes where enabling this is possible
 ;
+PARTICLES = 0
 
 
 	.include 	'jaguar.inc'
