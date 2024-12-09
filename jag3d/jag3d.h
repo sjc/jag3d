@@ -49,6 +49,7 @@ short AngleAlongVector(short x, short y);
 
 /*
  * Models
+ * Use if using the "Gouraud Shaded Textures" renderer
  */
 
 void FixTexture(Bitmap *texture);
@@ -66,5 +67,34 @@ void FixModelTextures(N3DObjdata *model);
 #define SIZEOF_3DSPRITE     (24+28+48)  // == 
 
 void Init3DSprite(N3DObjdata *sprite, Material *texture, short width, short height);
+
+/*
+ * Particles
+ */
+
+typedef struct {
+    short ttl;
+    short z,y,x; // order designed to optomise loading in GPU
+    short color;
+    short dx,dy,dz;
+} Particle;
+
+//
+// renderers
+//
+void RenderPointsCustom(void *gpufunc, Particle *particles, short count);
+void RenderPoints(Particle *particles, short count);
+
+//
+// helpers
+//
+void ClearPoints(Particle *particles, short max_count);
+
+// this call assumes that there is at least one free (.ttl == 0) particle
+Particle *FindFreePoint(Particle *particles);
+
+// returns the updated count, max_count - expired particles
+short RunPoints(Particle *particles, short max_count);
+
 
 #endif // JAG3D_H

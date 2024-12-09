@@ -11,6 +11,7 @@ extern long renderer_code[];
 extern long renderer_init[];
 extern long renderer_frameinit[];
 extern long renderer_objinit[];
+extern long renderer_render_points[];
 
 /* from lib/gpulib.s */
 extern void GPUload(void *);    /* loads a package into the GPU */
@@ -69,6 +70,61 @@ RenderObjectCustom(void *gpufunc, N3DObjdata *data, Transform *trans, Lightmodel
 void
 RenderObject(N3DObjdata *data, Transform *trans, Lightmodel *lmodel, TPoint *tpoints) {
     RenderObjectCustom(renderer_objinit, data, trans, lmodel, tpoints);
+}
+
+//
+// Points / Particles
+//
+
+void 
+ClearPoints(Particle *particles, short max_count)
+{
+    while (max_count--) {
+        particles->ttl = 0;
+        particles++;
+    }
+}
+
+// this assumes that there will be at least one free element in the list
+Particle *FindFreePoint(Particle *particles)
+{
+    while (particles->ttl) particles++;
+    return particles;
+}
+
+short
+RunPoints(Particle *particles, short max_count)
+{
+    short count = 0;
+
+    while (max_count--) {
+        while (particles->ttl == 0) particles++; 
+        if (--particles->ttl) {
+            count++;
+            particles->x += particles->dx;
+            particles->y += particles->dy;
+            particles->z += particles->dz;
+        }
+        particles++;
+    }
+
+    return count;
+}
+
+void
+RenderPointsCustom(void *gpufunc, Particle *particles, short count)
+{    
+    if (count == 0) return;
+
+    params[0] = (long)count;
+    params[1] = (long)particles;
+
+    GPUrun(gpufunc);
+}
+
+void
+RenderPoints(Particle *particles, short count) {
+    RenderPointsCustom(renderer_render_points, particles, count);
 }
 
 /****************************************************************

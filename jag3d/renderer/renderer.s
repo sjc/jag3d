@@ -131,6 +131,12 @@ TRANSPARENTTEX = 1
 ;
 TRANSPARENTPIXEL = 0
 
+;
+; Enable the basic particle system. This may require more extra memory than
+; the GPU has free
+; TODO: list renderer modes where enabling this is possible
+;
+
 
 	.include 	'jaguar.inc'
 ;
@@ -373,6 +379,21 @@ frameinit:
 	.include 	"gpumatrix.inc"
 
 	; will jump (return) when done
+
+;
+; Function to draw points in world space
+;
+
+	.globl 	_renderer_render_points
+_renderer_render_points:
+
+pointrenderer:
+
+.if PARTICLES
+	.include 	"pointrenderer.inc"
+.endif
+
+	; will stop the GPU once done
 
 ;***********************************************************************
 ; Initialization code, and 324 word buffer for texture mapping
