@@ -17,13 +17,6 @@ _DISPBUF1:
 	.ds.w	3*320*240
 
 
-; space for passing parameters
-
-	.long
-	.globl	_params
-_params:
-	.ds.l	32
-
 ; space for testing returning values from the GPU
 
 	.long

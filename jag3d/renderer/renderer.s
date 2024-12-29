@@ -317,6 +317,16 @@ _GPUTLights:
 ;
 ; variables
 ;
+
+;
+; since these aren't setup until objinit.inc, and are used only
+;	for the duration of the object render call, we can use this
+;	memory for passing parameters from the main cpu
+; there are only 4 longs available, so if we go over this we
+;	should use _GPULights instead
+;
+_params::
+
 	.globl	gpoints,gtpoints
 gnumpoints:
 	.dc.l	0		; local copy of "numpoints" variable

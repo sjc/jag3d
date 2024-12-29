@@ -16,10 +16,7 @@ extern long renderer_objinit[];
 extern void GPUload(void *);    /* loads a package into the GPU */
 extern void GPUrun(void *);     /* runs a GPU program */
 
-extern void *malloc(long);
-extern void free(void *);
-
-/* long-aligned parameter block for the GPU, defined in miscasm.s */
+/* parameter space in GPU RAM -- currently only 4 longs long */
 extern long params[];
 
 /* for testing returning values from the GPU */

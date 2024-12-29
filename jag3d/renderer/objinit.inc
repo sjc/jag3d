@@ -61,8 +61,9 @@ iptr        .equr   r14,1
 ;   gtpoints
 ;   materialtable
 ;
-    movei   #gnumpoints,iptr       ; store numpoints, points and tpoints
-    store   ptcount,(iptr)         ; 
+    ;movei   #gnumpoints,iptr       ; store numpoints, points and tpoints
+        ; ^ because _params and gnumpoints point to the same address (for now...)
+    store   ptcount,(iptr)
     store   points,(iptr+1)
     store   tpoints,(iptr+2)
     store   matlist,(iptr+3)         ; store texture list table
