@@ -57,7 +57,7 @@ A directory can contain multiple model files.
 
 The interface to the library (described below) requires two pieces of information to represent the model to be rendered: the model data (`N3DObjdata`, described above) and a `Transform`.
 
-The `Transform` contains the position (`xpos`, `ypos`, `zpos`) and rotation around each axis (`alpha` `beta` and `gamma` for x, y and z axis) of the object in world space. Rotations by default are represented by a value between 0 and 2047, so that each step represent 1/1024 of Pi and there are 2048 steps in a complete rotation. The `AddRotation()` and `SubRotation()` macros can be used to keep these values clamped, although this is not required by the renderer.
+The `Transform` contains the position (`xpos`, `ypos`, `zpos`) and rotation around each axis (`alpha` `beta` and `gamma` for x, y and z axis) of the object in world space. This struct was named `angles` in the original `demo.c` code. Rotations by default are represented by a value between 0 and 2047, so that each step represent 1/1024 of Pi and there are 2048 steps in a complete rotation. The `AddRotation()` and `SubRotation()` macros can be used to keep these values clamped, although this is not required by the renderer.
 
 The camera's position and rotation are also represented by an instance of `Transform`.
 
@@ -126,6 +126,17 @@ A further complication when using either the "Flat Shaded Textures" or the "Gour
 - set the sprite's transform's `beta` property using `AngleAlongVector()`. This will give a billboard which faces towards the camera.
 
 See the demo code for examples of both approaches.
+
+## Updating from Atari 3D Demo
+
+- The `angles` struct has been renamed to `Transform`.
+
+- It is no longer neccesary to call `mkMatrix()` to prepare a `Matrix` from the `angles` (`Transform`) struct prior to rendering. The `mkMatrix()` function has been removed.
+
+- It is not necessary to call `N3Dclrbuf()` to clear the screen- and Z-buffer before rendering. This is now done in `SetupFrame()`. The `N3Dclrbuf()` function has been renamed to `ClearScreen()` and is still available for use at other times.
+
+- The order of the `width` and `height` properties of the `Bitmap` struct (as used for the screen buffers) have been reversed.
+
 
 ## TODO
 
