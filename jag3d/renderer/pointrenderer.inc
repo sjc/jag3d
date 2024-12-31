@@ -1,6 +1,6 @@
 ;
 ; pointrenderer.inc
-; render points into wrodl space
+; render points into world space
 ;
 
     .extern _params
@@ -134,10 +134,7 @@ b_count     .equr   r22,1
 ; point drawing loop
 ;
 
-; TODO: I don't think we use temp0 in here, so we could use it for
-;   eg. making re-loading the cammatrix faster
-
-    movei   #cammatrix,temp0
+    movei   #cammatrix,temp0        ; temp0 will hold cammatrix during this loop
 
 .nextpoint:
 
@@ -161,18 +158,10 @@ b_count     .equr   r22,1
     shrq    #16,z
     bset    #30,z           ; load $4000 into the high word, so z = 1|z
 
-    ; TODO: interleave loading with the z stuff above
+    ; TODO: interleave loading with the z stuff above?
 
-    ;movei   #cammatrix,temp1    ; TODO: load cammatrix from a register
-    ;movefa  altgmtxa,temp2      ; == G_MTXA
-    movei   #G_MTXA,temp2 ; to check whether altgmtxa is still valid
-        ; it is still valid, but only if we've previously rendered a polygon
-        ; so in the context of this test, it won't be
-        ; keep this change for now while we track down the other issue
-        ; TODO: track lifecycle of altgmtxa and the register it uses and see
-        ;   if we can set this once at init
-    ;store   temp1,(temp2)
-    store   temp0,(temp2)
+    movefa  altgmtxa,temp2      ; == G_MTXA
+    store   temp0,(temp2)       ; temp0 == cammatrix
 
     ; work out the location of the point in camera space
     ; TODO: we could save some space by using mmult against the camera matrix
@@ -190,18 +179,16 @@ b_count     .equr   r22,1
     mmult   xy,y            ; point y position in camera space
 
     nop
-    sharq   #14,x           ; adjust for aspect ratio (1)
+    nop
 
     mmult   xy,z            ; point z position in camera space
 
     nop
     nop
 
+    sharq   #14,x           ; adjust for aspect ratio (1)
     imult   aratio,x        ; adjust for aspect ratio (2)
                             ; do this after we've finished mmult-ing
-
-    ;store   temp1,(temp2)   ; -- cause issue to appear in bigp
-
     ;
     ; perspective transform from clip.inc
     ;
@@ -274,7 +261,7 @@ b_count     .equr   r22,1
 .endif
 
     ;
-    ; back to my shit drawing code
+    ; back to the drawing code
     ;
 
     ; by this point, the values should be correct
@@ -290,14 +277,6 @@ b_count     .equr   r22,1
     ; zfrac == r14 == a reg we can use for indexed access
     ;
     movefa  a1_ptr,zfrac  ; == A1_PIXEL
-
-    ; test to see if the issue is caused by not waiting for the blitter
-    ;   (it wasn't)
-;.bwait:
-;    load    (zfrac+((B_CMD-A1_PIXEL)/4)),temp1
-;    btst    #0,temp1
-;    jr      EQ,.bwait
-;    nop
 
     ; you have to reset B_COUNT each pass, stupid
     store   b_count,(zfrac+((B_COUNT-A1_PIXEL)/4))
