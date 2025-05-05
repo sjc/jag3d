@@ -131,6 +131,12 @@ TRANSPARENTTEX = 1
 ;
 TRANSPARENTPIXEL = 0
 
+;
+; Enable the basic particle system. This requires extra GPU memory and so
+;	will only work with the un-textured Gouraud or wireframe renderers
+;
+PARTICLES = 0
+
 
 	.include 	'jaguar.inc'
 ;
@@ -373,6 +379,21 @@ frameinit:
 	.include 	"gpumatrix.inc"
 
 	; will jump (return) when done
+
+;
+; Function to draw points in world space
+;
+
+	.globl 	_renderer_render_points
+_renderer_render_points:
+
+pointrenderer:
+
+.if PARTICLES
+	.include 	"pointrenderer.inc"
+.endif
+
+	; will stop the GPU once done
 
 ;***********************************************************************
 ; Initialization code, and 324 word buffer for texture mapping

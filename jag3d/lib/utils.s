@@ -244,3 +244,69 @@ SH  .equ 9      ; shift used to correct divisions
     move.l  (sp)+,d2
     rts
 
+
+;
+; short RunPoints(Particle *particles, short count)
+;
+
+; params
+PARTICLES   = 4
+COUNT       = 8
+
+; particle struct
+Z   = 2
+Y   = 4
+X   = 6
+DX  = 10
+DY  = 12
+DZ  = 14
+
+_RunPoints::
+
+    movea.l     PARTICLES(sp),a0
+    move.w      COUNT(sp),d1        ; == loop counter
+
+    subq.w      #1,d1
+    bmi         ._RunPoints_done    ; count was 0
+
+    move.l      d2,-(sp)
+    moveq       #0,d0
+    
+    bra         ._RunPoints_start   ; skip first increment
+
+._RunPoints_loop:
+
+    add     #16,a0
+
+._RunPoints_start:
+
+    move.w      (a0),d2
+    beq         ._RunPoints_loop    ; unused, find next one
+    
+    subq.w      #1,d2
+    move.w      d2,(a0)
+    beq         ._RunPoints_next    ; ttl expired, move on
+
+    addq.w      #1,d0       ; count of live particles
+
+    move.w      X(a0),d2
+    add.w       DX(a0),d2
+    move.w      d2,X(a0)
+
+    move.w      Y(a0),d2
+    add.w       DY(a0),d2
+    move.w      d2,Y(a0)
+
+    move.w      Z(a0),d2
+    add.w       DZ(a0),d2
+    move.w      d2,Z(a0)
+
+._RunPoints_next:
+
+    dbra    d1,._RunPoints_loop
+
+    move.l  (sp)+,d2
+
+._RunPoints_done:
+
+    rts

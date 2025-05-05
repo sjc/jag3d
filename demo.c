@@ -61,7 +61,6 @@ extern int sprintf(char *, const char *, ...);	/* you know what this does */
  */
 extern unsigned long clock(void);		/* timer function using the PIT */
 
-
 /****************************************************************
  *	External variables					*
  ****************************************************************/
