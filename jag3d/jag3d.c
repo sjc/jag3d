@@ -92,25 +92,6 @@ Particle *FindFreePoint(Particle *particles)
     return particles;
 }
 
-short
-RunPoints(Particle *particles, short max_count)
-{
-    short count = 0;
-
-    while (max_count--) {
-        while (particles->ttl == 0) particles++; 
-        if (--particles->ttl) {
-            count++;
-            particles->x += particles->dx;
-            particles->y += particles->dy;
-            particles->z += particles->dz;
-        }
-        particles++;
-    }
-
-    return count;
-}
-
 void
 RenderPointsCustom(void *gpufunc, Particle *particles, short count)
 {    
