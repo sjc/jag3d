@@ -154,22 +154,19 @@ b_count     .equr   r22,1
     JR      EQ,.nextpoint   ; if temp1 == 0 then ttl == 0, so skip this point
     addqt   #8,pptr         ; point to next point, whether we branch or not
 
-    shlq    #16,z   ; clear high word of register
-    shrq    #16,z
-    bset    #30,z           ; load $4000 into the high word, so z = 1|z
-
-    ; TODO: interleave loading with the z stuff above?
-
     movefa  altgmtxa,temp2      ; == G_MTXA
+
+        shlq    #16,z   ; clear high word of register
+        shrq    #16,z
+
     store   temp0,(temp2)       ; temp0 == cammatrix
 
-    ; work out the location of the point in camera space
-    ; TODO: we could save some space by using mmult against the camera matrix
-    ;   we would have to update the x column with the aspect ratio though...
-    ;   and would only be able to call this once...
+        bset    #30,z   ; load $4000 into the high word, so z = 1|z
 
-    nop     ; "WARNING: we need at least 1 instruction between any store and mmult instruction; if any
-    nop     ;   other processor (e.g. the blitter) is accessing GPU RAM, we need 2 instructions"
+    ; work out the location of the point in camera space
+
+    nop     ; required before MMULT
+    nop
 
     mmult   xy,x            ; point x position in camera space
 
@@ -183,8 +180,12 @@ b_count     .equr   r22,1
 
     mmult   xy,z            ; point z position in camera space
 
-    nop
-    nop
+    ; the SoftRef says that the flags should "reflect the final multiply/accumulate operation",
+    ;   however neither IMACN nor RESMAC are documented as setting any flags and in practice
+    ;   it doesn't look like they are in a useful state for us here, so we need to test the result
+
+    cmpq    #0,z
+    jump    MI,(pointskip)  ; is z behind the camera?
 
     sharq   #14,x           ; adjust for aspect ratio (1)
     imult   aratio,x        ; adjust for aspect ratio (2)
