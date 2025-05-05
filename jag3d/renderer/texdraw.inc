@@ -42,10 +42,6 @@ texpoly:
 	store 	temp0,(temp1)
 .endif
 
-	; moved out of the loop below (because otherwise we're doing nothing in here)
-	;	...and it doesn't work. find out why...
-	;movei	#FIRSTBCMD,bcmdval
-
 	jump	(return)
 	nop
 

@@ -80,28 +80,6 @@ b_count     .equr   r22,1
     shlq    #1,screenwidth
     shlq    #1,screenheight
 
-
-    ;
-    ; wait for blitter
-    ; would having a single version of this somewhere be any quicker, considering
-    ;   the amount of seyup needed to call a subroutine?
-
-    ; if we stored this in a main register...
-    ;
-    ;   move    PC,return
-    ;   jmp     (wait4blitter)
-    ;   addqt   #6,return
-    ;
-    ; returns with temp0 -> bcmd_ptr
-    ;
-
-;    movefa  bcmd_ptr,temp0
-;.bwait:
-;    load    (temp0),temp1
-;    btst    #0,temp1
-;    jr      EQ,.bwait
-;    nop
-    
 ;
 ; shared blitter setup
 ;
@@ -127,7 +105,7 @@ b_count     .equr   r22,1
     or      screenwidth,temp1
     store   temp1,(zfrac+((A1_CLIP-A1_BASE)/4))
 
-    ; TODO: check if we're drawing 2x2 or 3x3
+    ; points are drawn as 2x2 pixels
     movei   #$00020002,b_count
 
 ;

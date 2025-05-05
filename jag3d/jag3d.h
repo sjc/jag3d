@@ -94,7 +94,7 @@ void ClearPoints(Particle *particles, short max_count);
 Particle *FindFreePoint(Particle *particles);
 
 // returns the updated count, max_count - expired particles
-short RunPoints(Particle *particles, short max_count);
+short RunPoints(Particle *particles, short count);
 
 
 #endif // JAG3D_H

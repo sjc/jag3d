@@ -61,8 +61,6 @@ extern int sprintf(char *, const char *, ...);	/* you know what this does */
  */
 extern unsigned long clock(void);		/* timer function using the PIT */
 
-extern unsigned long test_returns[];
-
 /****************************************************************
  *	External variables					*
  ****************************************************************/
@@ -266,7 +264,7 @@ main()
 		objects[i].transform.zpos = models[i].initz;
 
 		// This is only required for the "Gouraud Shaded Textures" rendered (TEXSHADE = 2)
-		FixModelTextures(models[i].data);
+		// FixModelTextures(models[i].data);
 	}
 
 	camangles = (void *)((long)malloc(sizeof(Transform) + 3) & 0xFFFFFFFC);
@@ -399,11 +397,6 @@ main()
 		} else if (buts & JOY_RIGHT) {
 			camangles->beta = AddRotation(camangles->beta, 8);
 		}
-		// if (buts & JOY_LEFT) {
-		// 	objects[0].transform.beta -= 1;
-		// } else if (buts & JOY_RIGHT) {
-		// 	objects[0].transform.beta += 1;
-		// }
 
 		// up/down moves forward and back
 		if (buts & JOY_UP) {

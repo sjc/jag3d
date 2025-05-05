@@ -127,11 +127,19 @@ A further complication when using either the "Flat Shaded Textures" or the "Gour
 
 See the demo code for examples of both approaches.
 
+## Particles
+
+A simple point particle system can optionally be included. Set the `PARTICLES` flag to 1 in `renderer.s`. Please note that due to the extra space this requires in GPU RAM it can only be used with the un-textured Gouraud or wireframe renderers.
+
+To use it, pass a pointer to an array of `Particle` structs to the `RenderPoints()` function, along with a count of the number of particles to render. Particles with `.ttl` set to 0 will not be drawn.
+
+The `RunPoints()` function is used to move particles and manage their lifetime. It acts on all particles with non-0 `.ttl`, decreasing this value by 1, and returns the number of still-active particles.
+
 ## Updating from Atari 3D Demo
 
 - The `angles` struct has been renamed to `Transform`.
 
-- It is no longer neccesary to call `mkMatrix()` to prepare a `Matrix` from the `angles` (`Transform`) struct prior to rendering. The `mkMatrix()` function has been removed.
+- It is no longer necessary to call `mkMatrix()` to prepare a `Matrix` from the `angles` (`Transform`) struct prior to rendering. This is now done on the GPU in `RenderObject()`. The `mkMatrix()` function has been removed.
 
 - It is not necessary to call `N3Dclrbuf()` to clear the screen- and Z-buffer before rendering. This is now done in `SetupFrame()`. The `N3Dclrbuf()` function has been renamed to `ClearScreen()` and is still available for use at other times.
 

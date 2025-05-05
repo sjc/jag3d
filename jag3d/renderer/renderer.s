@@ -132,9 +132,8 @@ TRANSPARENTTEX = 1
 TRANSPARENTPIXEL = 0
 
 ;
-; Enable the basic particle system. This may require more extra memory than
-; the GPU has free
-; TODO: list renderer modes where enabling this is possible
+; Enable the basic particle system. This requires extra GPU memory and so
+;	will only work with the un-textured Gouraud or wireframe renderers
 ;
 PARTICLES = 0
 
