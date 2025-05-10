@@ -20,12 +20,6 @@ extern void GPUrun(void *);     /* runs a GPU program */
 /* parameter space in GPU RAM -- currently only 4 longs long */
 extern long params[];
 
-/* for testing returning values from the GPU */
-//extern short test_returns[];
-
-/* pointer to temporary storage for transformed points */
-;
-
 void
 LoadAndInitRendererCustom(long *gpucode, void *gpufunc)
 {

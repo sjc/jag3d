@@ -37,7 +37,7 @@ ARFLAGS = crs
 CRT0= $(LIB)/jagrt.o
 
 LIBOBJS = $(LIB)/alloc.o $(LIB)/clock.o $(LIB)/ctype.o $(LIB)/font.o \
-	$(LIB)/gpulib.o $(LIB)/joyinp.o $(LIB)/joypad.o $(LIB)/memset.o \
+	$(LIB)/joyinp.o $(LIB)/joypad.o $(LIB)/memset.o \
 	$(LIB)/olist.o $(LIB)/sprintf.o $(LIB)/strcat.o $(LIB)/strcmp.o \
 	$(LIB)/strcpy.o $(LIB)/strdup.o $(LIB)/strncmp.o $(LIB)/util.o \
 	$(LIB)/video.o
@@ -54,7 +54,7 @@ SRCOBJS = miscasm.o demo.o vectors.o storage.o
 #
 # Objects built by the 3D library code
 #
-JAG3D_OBJS = $(JAG3D)/jag3d.o $(JAG3D_LIB)/utils.o $(JAG3D_LIB)/sincos.o $(JAG3D_LIB)/3d_sprite_template.o $(JAG3D_REND)/renderer.o 
+JAG3D_OBJS = $(JAG3D)/jag3d.o $(JAG3D_LIB)/utils.o $(JAG3D_LIB)/sincos.o $(JAG3D_LIB)/gpulib.o $(JAG3D_LIB)/3d_sprite_template.o $(JAG3D_REND)/renderer.o 
 
 #
 # Building the renderer requires additional parameters to find its .inc files
