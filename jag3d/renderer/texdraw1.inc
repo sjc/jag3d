@@ -50,8 +50,11 @@ texpoly:
 ;
 ; set up the destination registers
 ;
+	.extern _rambuf ; miscasm.s
+
 	movefa	a2_ptr,temp2
-	movei	#_gpubuf,temp1
+	;movei	#_gpubuf,temp1
+	movei	#_rambuf,temp1
 	subqt	#(A2_PIXEL-A2_BASE),temp2
 	store	temp1,(temp2)		; set A2_BASE
 		; TODO: does anything else change A2_BASE? can we set this up once for this renderer?
