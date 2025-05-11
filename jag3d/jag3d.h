@@ -96,5 +96,9 @@ Particle *FindFreePoint(Particle *particles);
 // returns the updated count, max_count - expired particles
 short RunPoints(Particle *particles, short count);
 
+/*
+ * CrY colour helpers
+ */
+unsigned short RGBtoCrY(short red, short green, short blue);
 
 #endif // JAG3D_H

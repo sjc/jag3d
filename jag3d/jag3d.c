@@ -182,3 +182,17 @@ FixModelTextures(N3DObjdata *model)
         }
     }
 }
+
+//
+// CrY colours
+//
+
+extern unsigned short do_cry(int, int, int);
+
+unsigned short RGBtoCrY(short r, short g, short b) {
+    return do_cry(r, g, b);
+}
+
+// unsigned short RGB16toCrY(short rgb16) {
+
+// }

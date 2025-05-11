@@ -135,6 +135,10 @@ To use it, pass a pointer to an array of `Particle` structs to the `RenderPoints
 
 The `RunPoints()` function is used to move particles and manage their lifetime. It acts on all particles with non-0 `.ttl`, decreasing this value by 1, and returns the number of still-active particles.
 
+## Helper Functions
+
+`RGBtoCrY()` will convert a colour defined by red, green and blue components into the equivalent 16-bit CrY value. This uses code from the `rgb2cry` command line utility.
+
 ## Updating from Atari 3D Demo
 
 - The `angles` struct has been renamed to `Transform`.
