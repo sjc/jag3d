@@ -27,8 +27,9 @@ bptr        .equr   r14,1               ; indexed pointer which is free outside 
 ;
 
     movei   #_params,temp0
+.if INITCLEARBUFFER
     movei   #A1_BASE,bptr
-
+.endif
     load    (temp0),cam         ; get output bitmap pointer
     addqt   #4,temp0
     load    (temp0),cammat          ; get camera matrix pointer
@@ -53,9 +54,10 @@ bptr        .equr   r14,1               ; indexed pointer which is free outside 
     addqt   #4,cam
     moveta  temp2,destaddr
 
-    ;
-    ; use the blitter to clear the screen and Z buffer
-    ;
+.if INITCLEARBUFFER
+;
+; use the blitter to clear the screen and Z buffer
+;
 
     store   temp2,(bptr)    ; A1_BASE = buffer base address
         
@@ -92,6 +94,10 @@ bptr        .equr   r14,1               ; indexed pointer which is free outside 
 
     movei   #(UPDA1|DSTWRZ|PATDSEL),temp1
     store   temp1,(bptr)    ; start the blitter
+.else
+    moveq   #0,temp2
+    subqt   #1,temp2    ; == $FFFFFFFF
+.endif
 
     .equrundef  bptr    ; finished with this
 

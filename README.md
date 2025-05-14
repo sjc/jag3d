@@ -79,7 +79,7 @@ Load the renderer into GPU memory with `LoadAndInitRenderer()`. This takes no pa
 
 If you are not using the GPU for anything else, you can be load and initialise the rendering code once eg. before entering your main game loop. Once the initialisation code has been run it is no longer needed and the space it occupied if freed-up for use by the renderer.
 
-At the start of each frame, after swapping the screen buffers and making any updates to the camera's position and orientation, call `SetupFrame()`. This sets up the camera matrix used by all subsequent calls to the object rendering function.
+At the start of each frame, after swapping the screen buffers and making any updates to the camera's position and orientation, call `SetupFrame()`. This sets up the camera matrix used by all subsequent calls to the object rendering function. It will also clear the buffer ready for drawing, if `INITCLEARBUFFER` is set in `renderer.s`. If not, the `ClearScreen()` function can be used.
 
 Each object is rendered to the current buffer using `RenderObject()`. This takes as parameters:
 
@@ -145,7 +145,7 @@ The `RunPoints()` function is used to move particles and manage their lifetime. 
 
 - It is no longer necessary to call `mkMatrix()` to prepare a `Matrix` from the `angles` (`Transform`) struct prior to rendering. This is now done on the GPU in `RenderObject()`. The `mkMatrix()` function has been removed.
 
-- It is not necessary to call `N3Dclrbuf()` to clear the screen- and Z-buffer before rendering. This is now done in `SetupFrame()`. The `N3Dclrbuf()` function has been renamed to `ClearScreen()` and is still available for use at other times.
+- It is not necessary to call `N3Dclrbuf()` to clear the screen- and Z-buffer before rendering. This is now done in `SetupFrame()` if the `INITCLEARBUFFER` flag is set. The `N3Dclrbuf()` function has been renamed to `ClearScreen()` and is still available.
 
 - The order of the `width` and `height` properties of the `Bitmap` struct (as used for the screen buffers) have been reversed.
 

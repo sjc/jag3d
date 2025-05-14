@@ -132,6 +132,11 @@ TRANSPARENTTEX = 1
 TRANSPARENTPIXEL = 0
 
 ;
+; Whether to clear the buffer passed to frameinit
+;
+INITCLEARBUFFER = 1
+
+;
 ; Enable the basic particle system. This requires extra GPU memory and so
 ;	will only work with the un-textured Gouraud or wireframe renderers
 ;
