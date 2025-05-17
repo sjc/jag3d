@@ -43,33 +43,27 @@ OLsize(union olist *o)
 }
 
 void
-OLbldto(union olist *o, void *packed) {
+OLbldto(union olist *o, void *packed, short count) {
 	long *lptr = (long *)packed;
 	long l0, l1;
-	int done;
 	long curlink, nextlink;
 	long align;
 	long *linkaddr;
 	union olist *obj;
 	long objindex;
 
-/* first, find number of objects in list
- */
-	l0 = 1;		/* for last object */
-	for (obj = o; obj->type != OL_STOP; obj++) {
-		l0++;
-	}
-	linkaddr = alloca(4*(l0+1));
+
+	linkaddr = alloca(4*count);
+
 /*
  * next, find the link addresses of everything in
  * the list
  */
 	curlink = ((long)OLPstore) + 32L;		/* first 4 phrases are stop objects & branches */
 	curlink /= 8;
-	done = 0;
 	obj = o;
 	objindex = 0;
-	while (!done) {
+	while (objindex < count) {
 		switch(obj->type) {
 		case OL_BITMAP:
 			curlink = (curlink+1) & ~1L;	/* double phrase align */
@@ -79,8 +73,6 @@ OLbldto(union olist *o, void *packed) {
 			curlink = (curlink+3) & (~3L);	/* quad phrase align */
 			l0 = 3;				/* takes 3 phrases */
 			break;
-		case OL_STOP:
-			done = 1;			/* fall through */
 		default:
 			l0 = 1;				/* takes 1 phrase */
 			break;
@@ -94,12 +86,11 @@ OLbldto(union olist *o, void *packed) {
 /*
  * finally, actually build the object list
  */
-	done = 0;
 	objindex = 0;
 	curlink = ((long)OLPstore) + 32L;		/* first 4 phrases are stop objects & branches */
 	curlink /= 8;
 
-	while (!done) {
+	while (objindex < count) {
 		nextlink = linkaddr[objindex+1];
 		l0 = l1 = 0;
 		switch (o->type) {
@@ -158,6 +149,7 @@ dobitmap:
 			l1 = (LOLINK(nextlink) << 24L) | ((long)o->bra.condition << 14L) | (o->bra.ypos << 3L) | (o->type);
 			*lptr++ = l0;
 			*lptr++ = l1;
+			curlink++;
 			break;
 		case OL_STOP:
 			l0 = o->stp.data[0];
@@ -165,25 +157,9 @@ dobitmap:
 			*lptr++ = l0;
 			*lptr++ = l1;
 			curlink++;
-			done = 1;
 			break;
 		}
 		o++;
 		objindex++;
 	}
 }
-
-void *
-OLbuild(union olist *unpacked) {
-	long size;
-	void *packed;
-
-	size = OLsize(unpacked);
-	packed = malloc(size);
-	if (packed) {
-		OLbldto(unpacked, packed);
-	}
-	return packed;
-}
-
-

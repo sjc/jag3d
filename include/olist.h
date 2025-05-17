@@ -31,11 +31,11 @@ struct olist_gpu {
 struct olist_branch {
 	unsigned short	type;
 	unsigned short	condition;
-#define OL_CCEQ	0x1
-#define OL_CCGT	0x2
-#define OL_CCLT	0x4
-#define OL_CCFLG 0x8
-#define OL_CC2ND 0x10
+#define OL_CCEQ	 0x0
+#define OL_CCGT	 0x1
+#define OL_CCLT	 0x2
+#define OL_CCFLG 0x3
+#define OL_CC2ND 0x4
 	unsigned short	ypos;
 	unsigned long	link;
 };
@@ -70,8 +70,7 @@ union olist {
 #define OL_SCALE_DOUBLE	0x40
 #define OL_SCALE_TRIPLE	0x60
 
-void *OLbuild(union olist *unpacked);
-void OLbldto(union olist *unpacked, void *ptr);
+void OLbldto(union olist *unpacked, void *ptr, short count);
 long OLsize(union olist *unpacked);
 
 extern long OLPstore[];

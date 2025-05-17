@@ -129,8 +129,10 @@ MODEL models[] = {
 
 #define MODEL_COUNT (sizeof(models)/sizeof(MODEL))
 
+#define OLIST_LEN 2
+
 /* object list for first screen */
-union olist buf1_olist[2] =
+union olist buf1_olist[OLIST_LEN] =
 {
 	{{OL_BITMAP,	/* type */
 	 14+(320-OBJWIDTH)/2, 20+(240-OBJHEIGHT),		/* x, y */
@@ -144,7 +146,7 @@ union olist buf1_olist[2] =
 };
 
 /* object list for second screen */
-union olist buf2_olist[2] =
+union olist buf2_olist[OLIST_LEN] =
 {
 	{{OL_BITMAP,	/* type */
 	 14+(320-OBJWIDTH)/2, 20+(240-OBJHEIGHT),		/* x, y */
@@ -239,8 +241,8 @@ main()
 
 	/* build packed versions of the two object lists */
 	/* (output is double buffered)			 */
-	OLbldto(buf1_olist, packed_olist1);
-	OLbldto(buf2_olist, packed_olist2);
+	OLbldto(buf1_olist, packed_olist1, OLIST_LEN);
+	OLbldto(buf2_olist, packed_olist2, OLIST_LEN);
 
 	/* initialize the video */
 	OLPset(packed_olist2);
