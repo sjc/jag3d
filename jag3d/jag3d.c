@@ -183,9 +183,9 @@ FixModelTextures(N3DObjdata *model)
     }
 }
 
-//
-// CrY colours
-//
+/*
+ * CrY colours
+ */
 
 extern unsigned short do_cry(int, int, int);
 
@@ -196,3 +196,42 @@ unsigned short RGBtoCrY(short r, short g, short b) {
 // unsigned short RGB16toCrY(short rgb16) {
 
 // }
+
+/*
+ * Model Helpers
+ */
+
+void CopyModelShallow(N3DObjdata *original, N3DObjdata *copy, Material *materials) {
+    copy->numpolys      = original->numpolys;
+    copy->numpoints     = original->numpoints;
+    copy->nummaterials  = original->nummaterials;
+    copy->reserved      = original->reserved;
+    copy->faces         = original->faces;
+    copy->points        = original->points;
+    copy->materials     = materials ?: original->materials;
+}
+
+short SizeOfModel(N3DObjdata *model, short copy_faces, short copy_points, short copy_materials) {
+
+    // assume packing: model, points, faces, materials without additional padding
+
+    short size = sizeof(N3DObjdata);
+
+    if (copy_faces) {
+        // check for faces which contain more than 3 faces
+        void *ptr = (void *)model->faces;
+        short count = model->numpolys;
+
+        while (count--) {
+            short points = ((Face *)ptr)->npts;
+            short extra = (points - 3) * 4; // 4 bytes for every extra point
+            size += sizeof(Face) + extra;
+            ptr += sizeof(Face) + extra;
+        }
+    }
+
+    if (copy_points) size += (sizeof(Point) * model->numpoints);
+    if (copy_materials) size += (sizeof(Material) * model->nummaterials);
+
+    return size;
+}

@@ -77,7 +77,7 @@ If the "Gouraud Shaded Textures" version is used, the `FixModelTextures()` funct
 
 Load the renderer into GPU memory with `LoadAndInitRenderer()`. This takes no parameters and will load and initialise the default renderer, built from `renderer.s`. 
 
-If you are not using the GPU for anything else, you can be load and initialise the rendering code once eg. before entering your main game loop. Once the initialisation code has been run it is no longer needed and the space it occupied if freed-up for use by the renderer.
+If you are not using the GPU for anything else, you can be load and initialise the rendering code once eg. before entering your main game loop. Once the initialisation code has been run it is no longer needed and the space it occupied is freed for use by the renderer.
 
 At the start of each frame, after swapping the screen buffers and making any updates to the camera's position and orientation, call `SetupFrame()`. This sets up the camera matrix used by all subsequent calls to the object rendering function. It will also clear the buffer ready for drawing, if `INITCLEARBUFFER` is set in `renderer.s`. If not, the `ClearScreen()` function can be used.
 
@@ -138,6 +138,12 @@ The `RunPoints()` function is used to move particles and manage their lifetime. 
 ## Helper Functions
 
 `RGBtoCrY()` will convert a colour defined by red, green and blue components into the equivalent 16-bit CrY value. This uses code from the `rgb2cry` command line utility.
+
+`CopyModelShallow()` will populate a `N3Dobjdata`-sized buffer with the properties from another `N3DObjdata`, optionally replacing the texture pointer.
+
+`SizeOfModel()` will calculate the memory needed to hold a copy of a `N3DObjdata` and the arrays of `Point`, `Face` and `Material` it references.
+
+`CopyModelDeep()` will copy a `N3DObjdata` and optionally its points, faces and material arrays. `SizeOfModel()` can be used to calculate the size needed for the destination buffer. `CopyModelDeep()` can also scale the object by an 8.8 fixed-point fraction while copying its points.
 
 ## Updating from Atari 3D Demo
 

@@ -48,7 +48,7 @@ short AngleAlongVector(short x, short y);
 #define SubRotation(a,b)    ((a-b)&ROTMASK)
 
 /*
- * Models
+ * Texture Helpers
  * Use if using the "Gouraud Shaded Textures" renderer
  */
 
@@ -56,15 +56,45 @@ void FixTexture(Bitmap *texture);
 void FixModelTextures(N3DObjdata *model);
 
 /*
+ * Model Helpers
+ */
+
+//
+// Create a shallow copy of a model, copying just the top-level properties
+//  from `original` into `copy`, which should be pre-allocated.
+// If `materials` is provided then the `.materials` property is replaced; if
+//  this parameter is 0 then the pointer from `original` will be copied.
+//
+void CopyModelShallow(N3DObjdata *original, N3DObjdata *copy, Material *materials);
+
+//
+// Calculate the size required to hold a deep copy of a model, as created
+//  by CopyModelDeep().
+//
+short SizeOfModel(N3DObjdata *model, short copy_faces, short copy_points, short copy_materials);
+
+//
+// Create a deep copy of a model.
+// The parameters `copy_faces`, `copy_points` and `copy_materials` control
+//  whether the respective arrays are copied into memory after the header
+//  object. Passing 0 for all three is equivalent of calling CopyModelShallow().
+// The `scale` parameter is an 8.8 fixed point fraction used to scale the
+//  position of the vertexes and thus scale the model. It is only effective if
+//  `copy_points` is 1. Pass `NO_SCALE` to maintain the original scale.
+//
+void *CopyModelDeep(N3DObjdata *original, void *buffer, short copy_faces, short copy_points, short copy_materials, short scale);
+
+#define NO_SCALE 0
+
+/*
  * 3D Sprites
  */
 
 // == sizeof(N3DObjdata)
-//  + 4                     padding so that the facelist is also phrase aligned
 //  + sizeof(Face)
 //  + 4                     the sprite is a rect therefore the Face has an extra point
 //  + 4 * sizeof(Point)
-#define SIZEOF_3DSPRITE     (24+28+48)  // == 
+#define SIZEOF_3DSPRITE     (20+28+48)  // == 96
 
 void Init3DSprite(N3DObjdata *sprite, Material *texture, short width, short height);
 

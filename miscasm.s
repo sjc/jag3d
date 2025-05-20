@@ -16,31 +16,7 @@ DISPBUF1:
 _DISPBUF1:
 	.ds.w	3*320*240
 
-
-; space for testing returning values from the GPU
-
-	.long
-	.globl  _test_returns
-_test_returns:
-	.ds.l   8 ; enough for 16 words
-
-; ram buffer for Gouraud shaded texture mapping;
-; use this if the CLUT is unavailable
-
-	.globl	_rambuf
 	.phrase
-_rambuf:
-	.ds.w	324
-
-
-;
-; array for holding profiling information
-; not currently used
-;
-	.globl	_proftime
-	.long
-_proftime:
-	.ds.l	32
 
 	.data
 	.phrase

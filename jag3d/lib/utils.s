@@ -2,13 +2,230 @@
 ; utils.s
 ;
 
+    .bss
+
+;
+; space for testing returning values from the GPU
+;
+
+    .long
+_test_returns::
+    .ds.l   8 ; enough for 16 words
+
+
+; ram buffer for Gouraud shaded texture mapping;
+; use this if the CLUT is unavailable
+
+    .phrase
+_rambuf::
+    .ds.w   324
+
+
+;
+; array for holding profiling information
+; not currently used
+;
+    .long
+_proftime::
+    .ds.l   32
+
+    .text
+
+;
+; Constants
+; These must be kept in sync with n3d.h
+;
+
+SIZEOF_N3DOBJDATA   = 24 ;20    ; == sizeof(N3DObjData)
+SIZEOF_FACE         = 28 ;24    ; == sizeof(Face)
+SIZEOF_POINT        = 12    ; == sizeof(Point)
+SIZEOF_MATERIAL     = 8     ; == sizeof(Material)
+
+;
+; CopyModelDeep()
+;
+
+_CopyModelDeep::
+
+    ; void *CopyModelDeep(
+    ;   N3DObjdata *original, 
+    ;   void *buffer, 
+    ;   short copy_faces, 
+    ;   short copy_points, 
+    ;   short scale, 
+    ;   short copy_materials
+    ; );
+
+; params:
+ORIGINAL        = 4
+BUFFER          = 8
+COPY_FACES      = 12
+COPY_POINTS     = 14
+COPY_MATERIALS  = 16
+SCALE           = 18
+
+; scale values
+NO_SCALE    = 0
+SCALE_1_0   = $0100 ; 1.0 in 8.8 fixed point format
+
+    ; a0 == source (original)
+    ; a1 == destination (buffer)
+
+    move.l  ORIGINAL(sp),a0
+    move.l  BUFFER(sp),a1
+
+    movem.l     d2-d3/a2-a3,-(sp)
+
+    move.l  (a0)+,d0        ; copy numpolys|numpoints
+    move.l  (a0)+,d1        ; copy nummaterials|reserved
+    
+    move.l  d0,(a1)+     
+    move.l  d1,(a1)+
+
+    lea     12(a1),a3       ; buffer after the object header, for other data
+                            ; doesn't require padding for alignment
+    ;
+    ; faces
+    ;
+
+    move.l  (a0)+,a2        ; pointer to original faces
+
+    tst.w   (COPY_FACES+16)(sp)     ; check copy_faces param
+    bne     .copy_faces
+
+    move.l  a2,(a1)+
+    bra     .copy_faces_done
+
+.copy_faces:
+
+    move.l  a3,(a1)+        ; pointer to copy faces
+
+    swap    d0          ; numpolys|numpoints -> numpoints|numpolys
+    subq.w  #1,d0       ; numpolys counter
+
+.faces_loop:
+
+    move.l  (a2)+,(a3)+     ; copy fx|fy
+    move.l  (a2)+,(a3)+     ; copy fz|fd
+    move.l  (a2)+,d2        ; copy npts|material
+    move.l  d2,(a3)+
+
+        swap    d2      ; npts
+        subq.w  #1,d2
+
+.face_points_loop:
+
+        move.l  (a2)+,(a3)+     ; point index|u,v
+        dbra    d2,.face_points_loop
+
+    dbra    d0,.faces_loop
+
+    swap    d0 ; swap back for numpoint counter
+
+.copy_faces_done:
+
+    ;
+    ; points
+    ;
+
+    move.l  (a0)+,a2        ; pointer to original points
+
+    tst.w   (COPY_POINTS+16)(sp)    ; check copy_points param
+    bne     .copy_points
+
+    move.l  a2,(a1)+
+    bra     .copy_points_done
+
+.copy_points:
+
+    move.l  a3,(a1)+        ; pointer to copy points
+
+    subq.w  #1,d0           ; numpoint counter
+
+    move.w  (SCALE+16)(sp),d2  ; should we scale the points?
+    beq     .no_scale_loop
+    cmp.w   #SCALE_1_0,d2
+    beq     .no_scale_loop
+
+    ;
+    ; scaled points
+    ;
+
+.scaled_loop:
+
+    move.w  (a2)+,d3        ; x
+    muls    d2,d3
+    asr.l   #8,d3
+    move.w  d3,(a3)+
+
+    move.w  (a2)+,d3        ; y
+    muls    d2,d3
+    asr.l   #8,d3
+    move.w  d3,(a3)+
+
+    move.w  (a2)+,d3        ; z
+    muls    d2,d3
+    asr.l   #8,d3
+    move.w  d3,(a3)+
+
+    move.w  (a2)+,(a3)+     ; vx
+    move.l  (a2)+,(a3)+     ; vy,vz
+
+    dbra    d0,.scaled_loop
+
+    bra     .copy_points_done
+
+    ;
+    ; un-scaled points
+    ;
+
+.no_scale_loop:
+
+    move.l  (a2)+,(a3)+     ; copy x|y
+    move.l  (a2)+,(a3)+     ; copy z|vx
+    move.l  (a2)+,(a3)+     ; copy vy,vz
+
+    dbra    d0,.no_scale_loop
+
+.copy_points_done:
+
+    ;
+    ; materials
+    ;
+
+    move.l  (a0)+,a2        ; pointer to original materials
+
+    tst.w   (COPY_MATERIALS+16)(sp)
+    bne     .copy_materials
+
+    move.l  a2,(a1)         ; pointer to provided material
+    bra     .done
+
+.copy_materials:
+
+    move.l  a3,(a1)     ; pointer to copied materials
+
+    swap    d1          ; nummaterials counter
+    subq.w  #1,d1
+
+.materials_loop:
+
+    move.l  (a2)+,(a3)+     ; copy color|flags
+    move.l  (a2)+,(a3)+     ; copy of tmap
+
+    dbra    d1,.materials_loop
+
+.done:
+
+    move.l  a3,d0           ; return value, pointer to end of copied structure
+
+    movem.l     (sp)+,d2-d3/a2-a3
+    rts
+
 
 ;
 ; Init3DSprite()
 ;
-
-SIZEOF_N3DOBJDATA   = 24    ; == sizeof(N3DObjData) + 4 bytes padding to maintain alignment
-SIZEOF_FACE         = 28    ; == sizeof(Face) + 4 bytes
 
 _Init3DSprite::
 
@@ -19,39 +236,36 @@ MATERIAL    = 8
 WIDTH       = 12
 HEIGHT      = 14
 
-    ;a0 == sprite (destination)
-    ;a1 == _3d_sprite_template (source)
-
     .extern _3d_sprite_template
 
+    ;
+    ; call CopyModelDeep() to clone 3D sprite template
+    ;
+
     move.l  SPRITE(sp),d0   ; sprite param == destination
-    move.l  d0,a0
 
-    lea     _3d_sprite_template,a1
+    clr.l   -(sp)       ; NO_SCALE, do not copy materials
+    moveq   #1,d1
+    move.w  d1,-(sp)    ; copy points
+    move.w  d1,-(sp)    ; copy faces
 
-    move.l  (a1)+,(a0)+     ; num faces, num points
-    move.l  (a1)+,(a0)+     ; num materials, reserved
+    move.l  d0,-(sp)    ; destination buffer
 
-    ; the facelist and vertlist will follow this in memory
+    move.l  #_3d_sprite_template,-(sp)    ; source model
 
-    add.l   #SIZEOF_N3DOBJDATA,d0
-    move.l  d0,(a0)+        ; pointer to facelist
+    bsr     _CopyModelDeep
+    adda.l  #16,sp
 
-    add.l   #SIZEOF_FACE,d0
-    move.l  d0,(a0)+        ; pointer to vertlist
+    ;
+    ; fix-up cloned sprite
+    ;
 
-    move.l  MATERIAL(sp),(a0)+  ; pointer to matlist (with 1 material)
+    move.l  SPRITE(sp),a0   ; sprite param == destination
 
-    clr.l   (a0)+           ; padding so that facelist is phrase aligned
+    move.l  MATERIAL(sp),d0
+    move.l  d0,16(a0)       ; sprite->material == material
 
-    adda.l  #12,a1          ; copy facelist
-    move.l  (a1)+,(a0)+
-    move.l  (a1)+,(a0)+     ; face normal
-    move.l  (a1)+,(a0)+     ; num points, material index
-    move.l  (a1)+,(a0)+     ; point index, texture coords
-    move.l  (a1)+,(a0)+
-    move.l  (a1)+,(a0)+
-    move.l  (a1)+,(a0)+
+    move.l  12(a0),a0       ; pointer to points array
 
     move.w  WIDTH(sp),d0
     lsr.w   #1,d0
@@ -59,40 +273,32 @@ HEIGHT      = 14
     move.w  HEIGHT(sp),d1
     lsr.w   #1,d1
 
-    lea     $4000,a1        ; z vertex normal
+    neg.w   d0
+    neg.w   d1
+
+    move.w  d0,(a0)+        ; x coord
+    move.w  d1,(a0)         ; y coord
+    lea     10(a0),a0
+
+    neg.w   d0
+
+    move.w  d0,(a0)+        ; x coord
+    move.w  d1,(a0)         ; y coord
+    lea     10(a0),a0
 
     neg.w   d0
     neg.w   d1
 
     move.w  d0,(a0)+        ; x coord
-    move.w  d1,(a0)+        ; y coord
-    clr.l   (a0)+           ; z coord, x vertex normal
-    move.l  a1,(a0)+        ; y vertex normal, z vertex normal
+    move.w  d1,(a0)         ; y coord
+    lea     10(a0),a0
 
     neg.w   d0
 
     move.w  d0,(a0)+        ; x coord
-    move.w  d1,(a0)+        ; y coord
-    clr.l   (a0)+           ; z coord, x vertex normal
-    move.l  a1,(a0)+        ; y vertex normal, z vertex normal
-
-    neg.w   d0
-    neg.w   d1
-
-    move.w  d0,(a0)+        ; x coord
-    move.w  d1,(a0)+        ; y coord
-    clr.l   (a0)+           ; z coord, x vertex normal
-    move.l  a1,(a0)+        ; y vertex normal, z vertex normal
-
-    neg.w   d0
-
-    move.w  d0,(a0)+        ; x coord
-    move.w  d1,(a0)+        ; y coord
-    clr.l   (a0)+           ; z coord, x vertex normal
-    move.l  a1,(a0)+        ; y vertex normal, z vertex normal
+    move.w  d1,(a0)         ; y coord
 
     rts
-
 
 ;
 ; AngleAlongVector()
