@@ -119,9 +119,9 @@ clip_to_plane:
 	addqt	#4,B
 	mult	vertsrem,A
 	add		B,A
+		move	altpgon,OUT
 	subqt	#SIZEOF_XPOINT,A		; A = &pgon->pt[vertsrem-1]
-	move	altpgon,OUT
-	addqt	#4,OUT				; OUT = &altpgon->pt[0]
+		addqt	#4,OUT				; OUT = &altpgon->pt[0]
 
 	moveq	#0,numpoints
 ;
@@ -216,31 +216,31 @@ clip_to_plane:
 	; copy point A to OUT
 	load	(A),temp0
 	addqt	#4,A
+		store	temp0,(OUT)
+		addqt	#4,OUT
 	load	(A),temp1
 	addqt	#4,A
+		store	temp1,(OUT)
+		addqt	#4,OUT
 	load	(A),temp2
 	addqt	#4,A
-	store	temp0,(OUT)
-	addqt	#4,OUT
-	store	temp1,(OUT)
-	addqt	#4,OUT
-	store	temp2,(OUT)
-	addqt	#4,OUT
+		store	temp2,(OUT)
+		addqt	#4,OUT
 	load	(A),temp0
 	addqt	#4,A
+		store	temp0,(OUT)
+		addqt	#4,OUT
 	load	(A),temp1
 	addqt	#4,A
+		store	temp1,(OUT)
+		addqt	#4,OUT
 	load	(A),temp2
 	subqt	#20,A
-	store	temp0,(OUT)
-	addqt	#4,OUT
-	store	temp1,(OUT)
-	addqt	#4,OUT
 	store	temp2,(OUT)
-	addqt	#4,OUT
-	addqt	#1,numpoints
+		addqt	#4,OUT
 
 	cmpq	#0,distB			; if distB < 0
+	addqt	#1,numpoints
 	jr	PL,.donewithA
 	nop					;   then
 		move	B,temp0			; swap A and B

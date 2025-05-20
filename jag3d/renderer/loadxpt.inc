@@ -19,8 +19,6 @@
 ; Returns:
 ;	temp0 = clip codes for transformed point
 
-	;.extern	_TLights		; lighting model -- THIS DOESN'T EXIST AND ISN'T REFERENCED ELSEWHERE
-
 ; TODO: move these up into renderer.s (if they're ever changed)
 NUMCLIPPLANES = 5			; number of clipping planes
 lightscale = 4				; parameter for tweaking lighting (in-scene lights are darkened by 2^lightscale)
@@ -59,11 +57,11 @@ _loadxpoint:
 	moveq	#12,temp1		; 12 == sizeof(point)
 	shrq	#16,temp2
 	
-	movei	#setxpoint,temp0 	; jump pointer
-	
 	mult	temp2,temp1		; temp1 = index*12
 	shlq	#4,temp2		; temp2 = index*16 (== sizeof(tpoint))
-		; stall
+
+	movei	#setxpoint,temp0 	; jump pointer
+
 	add		tpoints,temp2		; temp2 points to tpoints array entry
 		; stall
 	load	(temp2),basei		; load basei and clip code
@@ -74,9 +72,6 @@ _loadxpoint:
 	nop
 
 
-;
-; save the colori,texwidth,and texheight registers
-;
 .if (^^defined PROFILING)
 	moveta	temp1,atemp1
 	moveta	temp2,atemp2
@@ -85,6 +80,10 @@ _loadxpoint:
 	movefa	atemp1,temp1
 .endif
 
+
+;
+; save the colori,texwidth,and texheight registers
+;
 	moveta	xcolori,atemp0
 .if TEXTURES
 	moveta	xtexwidth,atemp1
@@ -111,6 +110,8 @@ _loadxpoint:
 	move	vz,vy				; Vy is in high word
 	bset	#30,z			; set high word of Z to 1
 	shrq	#16,vy				; get Vy into low word
+
+.if INDEXED = 0 ; remove all light calculations
 ;
 ; walk through the lighting model
 ;
@@ -186,8 +187,12 @@ endlightloop:
 	; saturate base intensity to $ffff
 	sat16	basei
 
+.endif ; INDEXED = 0
+
+	;
 	; OK, lighting is done
 	; now transform the point; put X into vx, y into vx, z into vz
+	;
 	movei	#_GPUM,temp0
 	movefa	altgmtxa,temp1
 	store	temp0,(temp1)		; set the GPU matrix address to _GPUM
@@ -263,7 +268,6 @@ endlightloop:
 ;
 ; restore colori, texwidth, and texheight
 ;
-	;movefa	atemp0,xcolori ; moved below
 .if TEXTURES
 	movefa	atemp1,xtexwidth
 	movefa	atemp2,xtexheight
@@ -281,7 +285,6 @@ endlightloop:
 
 	jr 		reallysetxpoint
 	movefa	atemp0,xcolori 		; from above
-	;nop
 
 setxpoint:
 

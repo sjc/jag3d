@@ -55,11 +55,15 @@ color		.equr	r13,1		; color for this polygon
 	load	(altpgon),tmap
 .endif ; TEXTURES
 
+.if INDEXED
+	shrq 	#16,color
+.else
 	shrq	#24,color				; isolate color
 	shlq	#8,color
 	move	color,temp0				; duplicate color into a long
 	shlq	#16,color
 	or		temp0,color
+.endif
 	moveta	color,b_color
 
 ;
@@ -176,10 +180,12 @@ innerloop	.equr	return		; inner loop branch address
 	addqt	#4,left
 	load	(left),temp1			; temp1 = left->i
 	addqt	#4,left
+.if INDEXED = 0
 	moveta	temp0,leftz
 	moveta	temp1,lefti
 	moveta	temp0,rightz
 	moveta	temp1,righti ; IS THIS CORRECT? was `rightz`, changed to `righti`
+.endif
 
 .if TEXTURES
 
@@ -224,13 +230,18 @@ polyloop:
 		load	(right),temp0		; temp0 = current right->x	 (branch optimization)
 		addqt	#8,right
 		moveta	temp0,rightx
+
+.if INDEXED = 0
 		load	(right),temp1
 		addqt	#4,right
-		;moveta	temp0,rightx
 		moveta	temp1,rightz
 		load	(right),temp0		; temp0 = lefti
 		addqt	#4,right
 		moveta	temp0,righti
+.else
+		addqt 	#8,right
+.endif
+
 .if TEXTURES
 
 		; TODO: check if this face has a texture
@@ -289,6 +300,7 @@ polyloop:
 
 		moveta	nextval,rightxstep
 
+.if INDEXED = 0
 		movefa	rightz,temp0
 		movefa	righti,temp1
 		load	(right),nextval		; nextval = right->z
@@ -318,6 +330,9 @@ polyloop:
 		sha	nlnorm,nextval
 
 		move	nextval,rightistep
+.else
+		addqt 	#8,right
+.endif
 
 .if TEXTURES
 
@@ -325,10 +340,9 @@ polyloop:
 
 		load	(right),nextval		; nextval = right->u
 		addqt	#4,right
-		movefa	rightu,temp0 ; from below
+		movefa	rightu,temp0
 		load	(right),temp2		; temp2 = right->v
 		subqt	#20,right
-		;movefa	rightu,temp0
 		movefa	rightv,temp1
 		sub	temp0,nextval		; now nextval = nextright->u - curright->u
 		sub	temp1,temp2		; and temp2 = nextright->v - curright->v
@@ -371,6 +385,14 @@ doneright:
 	subq	#1,vertsrem
 	jump	MI,(temp2)			; temp2 still contains "doneleft"
 	nop
+
+.if INDEXED
+		load	(left),temp0		; temp0 = left->x		
+		moveta	temp0,leftx
+.if TEXTURES
+		addqt 	#16,left
+.endif
+.else
 		load	(left),temp0		; temp0 = left->x		
 		addqt	#8,left				; skip X and Y
 		moveta	temp0,leftx
@@ -384,6 +406,7 @@ doneright:
 		subqt	#12,left		; move back to start of poly
 .endif
 		moveta	temp1,lefti
+.endif ; INDEXED
 
 .if TEXTURES
 		load	(left),temp1		; temp1 = left->u
@@ -441,6 +464,7 @@ doneright:
 
 		moveta	nextval,leftxstep
 
+.if INDEXED = 0
 		movefa	leftz,temp0
 		movefa	lefti,temp1
 		load	(left),nextval		; nextval = left->z
@@ -470,7 +494,9 @@ doneright:
 		sha	nlnorm,nextval
 
 		move	nextval,leftistep
-
+.else
+		addqt 	#8,left
+.endif
 
 .if TEXTURES
 

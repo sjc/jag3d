@@ -96,6 +96,10 @@ Each object is rendered to the current buffer using `RenderObject()`. This takes
 
 Multiple renderers should be possible by duplicating the main `renderer.s` file, renaming the exposed symbols (`renderer_code`, `renderer_init`, `renderer_frameinit` and `renderer_objinit`) and using the `…Custom()` versions of the functions described above. This has not yet been tested. It will be documented once it has.
 
+## Indexed Mode Renderers
+
+Renderers which target indexed -- 8bpp and below -- modes have been added. These cannot use the Gouraud shading or z-buffer features of the blitter. `demo.c` contains an example of setting up the screen buffers for these modes.
+
 ## 3D Sprites and Billboards
 
 A 3D sprite is a very simple model, just a rectangle with a texture mapped to one face. They can be used to introduce simple images into the 3D scene, such as projectiles and explosions. The library provides a helper function to setup a 3D sprite, `Init3DSprite()`. This takes as parameters:

@@ -87,12 +87,17 @@ bptr        .equr   r14,1               ; indexed pointer which is free outside 
 
     movefa  bcmd_ptr,bptr       ; bptr -> B_CMD
 
+.if INDEXED
+    movei   #(UPDA1|PATDSEL),temp1      ; indexed mode has no z buffer and attempting
+.else                                   ;   to clear it results in glitches
+    movei   #(UPDA1|DSTWRZ|PATDSEL),temp1
+.endif
+
     store   temp2,(bptr+((B_Z0-B_CMD)/4))           ; temp2 == $FFFFFFFF
     store   temp2,(bptr+((B_Z1-B_CMD)/4))
     store   temp2,(bptr+((B_Z2-B_CMD)/4))
     store   temp2,(bptr+((B_Z3-B_CMD)/4))
 
-    movei   #(UPDA1|DSTWRZ|PATDSEL),temp1
     store   temp1,(bptr)    ; start the blitter
 .else
     moveq   #0,temp2

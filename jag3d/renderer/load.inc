@@ -94,14 +94,14 @@ xtexheight	.equr	r9,1		; texture height
 	store	xcolori,(temp2)
 	addqt	#4,temp2
 	shlq	#8,xcolori		; make xcolori be just the intensity
-	store	temp1,(temp2)
-	shrq	#24,xcolori
+	store	temp1,(temp2) 	; save texture address -- is this accessed again?
+	shrq	#24,xcolori 	; where is this used again?
 
 .if TEXTURES
 	cmpq	#0,temp1		; is the texture map non-zero?
 	moveq	#0,xtexheight
 	jr	EQ,.skiptexload
-	nop
+	moveq	#0,xtexwidth
 
 .if TEXSHADE
 	movei	#$00ff,xcolori
@@ -112,17 +112,17 @@ xtexheight	.equr	r9,1		; texture height
 ;*
 	load	(temp1),xtexheight	; get texture height (low word) and width (high word)
 	addqt	#4,temp1
+		move	xtexheight,xtexwidth
 	load	(temp1),temp0		; get the blitter flags
 	addqt	#4,temp1
+		shlq	#16,xtexheight
 	load	(temp1),temp1		; get the actual output address
 	moveta	temp0,srcflags		; save source flags
 	moveta	temp1,srcaddr		; and source address
+		shrq	#16,xtexwidth
+		shrq	#16,xtexheight
 
 .skiptexload:
-	move	xtexheight,xtexwidth
-	shlq	#16,xtexheight
-	shrq	#16,xtexwidth
-	shrq	#16,xtexheight
 
 .endif	; TEXTURES
 
@@ -141,13 +141,19 @@ xtexheight	.equr	r9,1		; texture height
 
 	load	(tri),temp2			; get first point index from DRAM
 
+.if INDEXED = 0
 	movei	#_GPUTLights,temp0
 	movei	#$ff,andclips
 	moveta	temp0,altlmodel
+.else
+	movei	#$ff,andclips
+.endif
 
 endloop		.equr	r22,1		; end of lighting calculation loop
 
+.if INDEXED = 0
 	movei	#endlightloop,endloop
+.endif
 
 	move	PC,return
 	moveq	#0,orclips

@@ -24,7 +24,29 @@
 /* the width and height of the screen object */
 #define OBJWIDTH 320
 #define OBJHEIGHT 200
-#define WIDFLAG WID320		/* blitter flags corresponding to OBJWIDTH */
+#define WIDFLAG WID320		// blitter flag corresponding to OBJWIDTH
+
+#define INDEXEDMODE
+
+#ifdef INDEXEDMODE
+// setup for indexed pixels
+#define PIXELFLAG PIXEL8 	// blitter flag corresponding to pixel depth
+#define PIXELSPERPHRASE 8  // how many pixels per 8-byte phrase
+#define DEPTH 3  				// 4 == 16-bit, 3 == 8-bit
+#define S1ZOFFS ZOFFS0   	// offset from screen 1 to z buffer
+#define S2ZOFFS ZOFFS0   	// offset from screen 1 to z buffer
+#define CLEAR_COLOR 0
+
+#else
+// setup for 16-bit CrY
+#define PIXELFLAG PIXEL16 	// blitter flag corresponding to pixel depth
+#define PIXELSPERPHRASE 4  // how many pixels per 8-byte phrase
+#define DEPTH 4  				// 4 == 16-bit, 3 == 8-bit
+#define S1ZOFFS ZOFFS2   	// offset from screen 1 to z buffer
+#define S2ZOFFS ZOFFS1   	// offset from screen 1 to z buffer
+#define CLEAR_COLOR 0x27a027a0
+
+#endif //INDEXEDMODE
 
 /* length in bytes of a screen line (2 data buffers+1 Z buffer ->
    3*2 = 6 bytes/pixel */
@@ -138,8 +160,8 @@ union olist buf1_olist[OLIST_LEN] =
 	 14+(320-OBJWIDTH)/2, 20+(240-OBJHEIGHT),		/* x, y */
 	 0L,		/* link */
 	 DATA1,		/* data */
-	 OBJHEIGHT, OBJWIDTH*3/4, OBJWIDTH/4,		/* height, dwidth, iwidth */
-	 4, 3, 0, 0, 0,	/* depth, pitch, index, flags, firstpix */
+	 OBJHEIGHT, OBJWIDTH*3/PIXELSPERPHRASE, OBJWIDTH/PIXELSPERPHRASE,		/* height, dwidth, iwidth */
+	 DEPTH, 3, 0, 0, 0,	/* depth, pitch, index, flags, firstpix */
 	 0,0,0}},		/* scaling stuff */
 
 	{{OL_STOP}}
@@ -152,19 +174,17 @@ union olist buf2_olist[OLIST_LEN] =
 	 14+(320-OBJWIDTH)/2, 20+(240-OBJHEIGHT),		/* x, y */
 	 0L,		/* link */
 	 DATA2,		/* data */
-	 OBJHEIGHT, OBJWIDTH*3/4, OBJWIDTH/4,		/* height, dwidth, iwidth */
-	 4, 3, 0, 0, 0,	/* depth, pitch, index, flags, firstpix */
+	 OBJHEIGHT, OBJWIDTH*3/PIXELSPERPHRASE, OBJWIDTH/PIXELSPERPHRASE,		/* height, dwidth, iwidth */
+	 DEPTH, 3, 0, 0, 0,	/* depth, pitch, index, flags, firstpix */
 	 0,0,0}},		/* scaling stuff */
 
 	{{OL_STOP}}
 };
 
-#define CLEAR_COLOR 	0x27a027a0
-
 /* Bitmaps for the two screens */
 Bitmap scrn1 = {
 	CAMHEIGHT, CAMWIDTH,
-	PIXEL16|PITCH3|ZOFFS2|WIDFLAG,
+	PIXELFLAG|PITCH3|S1ZOFFS|WIDFLAG,
 	(void *)(DATA1 + ((OBJWIDTH-CAMWIDTH)*3L) + (((OBJHEIGHT-CAMHEIGHT)/2)*LINELEN) ),
 	CLEAR_COLOR
 };
@@ -172,8 +192,8 @@ Bitmap scrn1 = {
 /* initial data for camera corresponding to second screen buffer */
 Bitmap scrn2 = {
 	CAMHEIGHT, CAMWIDTH,
-	PIXEL16|PITCH3|ZOFFS1|WIDFLAG,
-	(void *)(DATA2 + ((OBJWIDTH-CAMWIDTH)*3) + (((OBJHEIGHT-CAMHEIGHT)/2)*LINELEN) ),
+	PIXELFLAG|PITCH3|S2ZOFFS|WIDFLAG,
+	(void *)(DATA2 + ((OBJWIDTH-CAMWIDTH)*3L) + (((OBJHEIGHT-CAMHEIGHT)/2)*LINELEN) ),
 	CLEAR_COLOR
 };
 
@@ -219,6 +239,11 @@ int packed_olist2[160];
 
 #define OBJCOUNT 4
 
+extern Material jaguar_logo_material_copy;
+extern Bitmap indexed_chkbrd;
+extern Bitmap chkbrd;
+extern Bitmap squares;
+
 int
 main()
 {
@@ -239,6 +264,23 @@ main()
 	Transform *explosion_trans;
 	short explosion_frame, explosion_frame_count;
 
+#ifdef INDEXEDMODE
+	// setup some basic colour indexes for testing indexed drawing
+	// because including <jaguar.h> breaking joypad reading...
+	unsigned short *palette = (unsigned short *)0xF00400;
+	palette[0] = RGBtoCrY(255, 0, 0);
+	palette[1] = RGBtoCrY(0, 255, 0);
+	palette[2] = RGBtoCrY(0, 0, 255);
+
+	jaguar_logo_material_copy.color = 0x01; // this is a colour index
+	jaguar_logo_material_copy.flags = 0;
+	jaguar_logo_material_copy.tmap = &indexed_chkbrd;
+#else
+	jaguar_logo_material_copy.color = RGBtoCrY(0,255,0); // a CrY colour
+	jaguar_logo_material_copy.flags = 0;
+	jaguar_logo_material_copy.tmap = jaguar_logo_material.tmap;
+#endif
+
 	/* build packed versions of the two object lists */
 	/* (output is double buffered)			 */
 	OLbldto(buf1_olist, packed_olist1, OLIST_LEN);
@@ -249,9 +291,6 @@ main()
 
 	/* wait for video sync (paranoid code) */
 	VIDsync();
-
-	/* clear the drawing area to black */
-	//memset(DATA1, 0x00, OBJWIDTH*(long)OBJHEIGHT*2L*3);	/* clear screen to black */
 
 	drawbuf = 0;			/* draw on buffer 1, while displaying buffer 2 */
 
@@ -277,7 +316,7 @@ main()
 	camangles->xpos = camangles->ypos = camangles->zpos = 0;
 
 	/* setup the logo 3d sprite */
-	Init3DSprite(&jaguar_logo_3d_sprite, &jaguar_logo_material, JAGUAR_LOGO_WIDTH, JAGUAR_LOGO_HEIGHT);
+	Init3DSprite(&jaguar_logo_3d_sprite, &jaguar_logo_material_copy, JAGUAR_LOGO_WIDTH, JAGUAR_LOGO_HEIGHT);
 	jaguar_logo_trans = (void *)((long)malloc(sizeof(Transform) + 3) & 0xFFFFFFFC);
 	jaguar_logo_trans->xpos = 0;
 	jaguar_logo_trans->ypos = 0;
@@ -373,6 +412,7 @@ main()
 
 		time = clock() - time;
 
+#ifndef INDEXEDMODE
 		/* debug status display */
 		/* frames per second */
 		sprintf(buf, "%d fps", (int)framespersecond);
@@ -381,6 +421,7 @@ main()
 		/* use this one for whatever you like */
 		sprintf(buf, "L/R: rotate, U/D: forward/back, 4/6: left/right");
 		FNTstr(20, 12, buf, curwindow->data, curwindow->blitflags, usefnt, 0xf0ff, 0 );
+#endif
 
 		/* buts will contain all buttons currently pressed */
 		/* shotbuts will contain the ones that are pressed now, but weren't

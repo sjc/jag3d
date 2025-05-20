@@ -85,8 +85,8 @@ Z		.equr	r15,1
 ;
 
 	move	pgon,pt
-	addqt	#4,pt
 	load	(pgon),vertsrem	; get number of points in polygon
+	addqt	#4,pt
 	movefa	altskip,temp1
 	cmpq	#3,vertsrem	; fewer than 3 points left?
 	jump	MI,(temp1)
