@@ -79,7 +79,7 @@ Load the renderer into GPU memory with `LoadAndInitRenderer()`. This takes no pa
 
 If you are not using the GPU for anything else, you can be load and initialise the rendering code once eg. before entering your main game loop. Once the initialisation code has been run it is no longer needed and the space it occupied is freed for use by the renderer.
 
-At the start of each frame, after swapping the screen buffers and making any updates to the camera's position and orientation, call `SetupFrame()`. This sets up the camera matrix used by all subsequent calls to the object rendering function. It will also clear the buffer ready for drawing, if `INITCLEARBUFFER` is set in `renderer.s`. If not, the `ClearScreen()` function can be used.
+At the start of each frame, after swapping the screen buffers and making any updates to the camera's position and orientation, call `SetupFrame()`. This sets up the camera matrix used by all subsequent calls to the object rendering function. It will also clear the buffer ready for drawing, if `INITCLEARBUFFER` is set in `renderer.s`. If not, the `ClearScreenAndZBuffer()` function -- or `ClearScreenBuffer()` if using an indexed mode renderer -- can be used.
 
 Each object is rendered to the current buffer using `RenderObject()`. This takes as parameters:
 

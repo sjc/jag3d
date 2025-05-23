@@ -111,7 +111,7 @@ RenderPoints(Particle *particles, short count) {
 // NOTE: This is now done on the GPU as part of SetupFrame()
 
 void
-ClearBufferAndZBuffer(Bitmap *buf) 
+ClearScreenAndZBuffer(Bitmap *buf) 
 {
     long zvalue = 0xffffffff;       /* Z value (16.16 fraction) */
 
@@ -131,7 +131,7 @@ ClearBufferAndZBuffer(Bitmap *buf)
 }
 
 void
-ClearBuffer(Bitmap *buf)
+ClearScreenBuffer(Bitmap *buf)
 {
     B_PATD[0] = buf->clearcolor;
     B_PATD[1] = buf->clearcolor;

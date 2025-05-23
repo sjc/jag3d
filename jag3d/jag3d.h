@@ -31,10 +31,10 @@ void RenderObjectCustom(void *gpufunc, N3DObjdata *data, Transform *trans, Light
 //
 
 // clears a screen buffer and its associated z-buffer
-void ClearBufferAndZBuffer(Bitmap *buf);
+void ClearScreenAndZBuffer(Bitmap *buf);
 
 // clears just the screen buffer
-void ClearBuffer(Bitmap *buf);
+void ClearScreenBuffer(Bitmap *buf);
 
 // Return an 'angle' in the range 0-2047 representing the rotation defined by the
 //  vector. The parameter names `x` and `y` are just placeholders, the angle can

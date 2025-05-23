@@ -6,9 +6,8 @@
 ;
 
 .if TRANSPARENTTEX
-FIRSTBCMD	=	(SRCEN|LFU_S|DSTEN|DSTENZ|DSTWRZ|ZMODEGT|ZBUFF|DSTA2|BKGWREN|DCOMPEN)
+FIRSTBCMD	=	(SRCEN|LFU_S|DSTEN|DSTA2|BKGWREN|DCOMPEN)
 .else
-;FIRSTBCMD	=	(SRCEN|LFU_S|DSTEN|DSTENZ|DSTWRZ|ZMODEGT|ZBUFF|DSTA2|BKGWREN)
 FIRSTBCMD	=	(SRCEN|LFU_S|DSTA2)
 .endif
 
@@ -31,15 +30,8 @@ texpoly:
 	moveta 	temp0,bcmdval
 
 .if TRANSPARENTTEX
-.if TRANSPARENTPIXEL
-	moveq 	#1,temp0
-	neg 	temp0
-.else
 	moveq 	#0,temp0
-.endif
 	movei	#B_PATD,temp1 		; == B_PATD
-	store 	temp0,(temp1)
-	addqt 	#4,temp1
 	store 	temp0,(temp1)
 .endif
 

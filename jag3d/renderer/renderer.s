@@ -61,12 +61,12 @@
 ;POLYSIDES	=	4
 
 ; "Unshaded Textures" (texrend.s)
-;INDEXED 	= 	0
-;WIREFRAME	=	0
-;PHRASEMODE	=	0
-;TEXTURES	=	1
-;TEXSHADE	=	0
-;POLYSIDES	=	4
+INDEXED 	= 	0
+WIREFRAME	=	0
+PHRASEMODE	=	0
+TEXTURES	=	1
+TEXSHADE	=	0
+POLYSIDES	=	4
 
 ; "Flat Shaded Textures" (flattex.s)
 ;INDEXED 	= 	0
@@ -101,13 +101,13 @@
 ;TEXSHADE	=	0
 ;POLYSIDES	=	4
 
-; "Indexed Mode Textured "
-INDEXED 	= 	1
-WIREFRAME	=	0
-PHRASEMODE	=	0
-TEXTURES	=	1
-TEXSHADE	=	0
-POLYSIDES	=	4
+; "Indexed Mode Textured"
+;INDEXED 	= 	1
+;WIREFRAME	=	0
+;PHRASEMODE	=	0
+;TEXTURES	=	1
+;TEXSHADE	=	0
+;POLYSIDES	=	4
 
 ;
 ; MAX_LIGHTS
@@ -145,7 +145,9 @@ TEXSHADE2BUF = 0
 ; TRANSPARENTPIXEL as transparent when drawing a texture. The other
 ; texture-mapping modes do this implicitly as part of the multi-buffer
 ; approach
-;	This has no affect in indexed mode? Check...
+;	For "Indexed Mode Textured", pixels with value 0 are treated as
+; transparent and not copied into the screen buffer.
+;
 TRANSPARENTTEX = 1
 
 ;
@@ -158,10 +160,14 @@ TRANSPARENTTEX = 1
 ; Set to 1 to select CrY $1111 (yellow) -- which is the default -- or to 
 ; 0 to select CrY $0000 (black)
 ;
+; This is not used for "Indexed Mode Textured".
+;
 TRANSPARENTPIXEL = 0
 
 ;
-; Whether to clear the buffer passed to frameinit
+; Whether to clear the buffers passed to frameinit. If set to 0 then you
+; are responsible for clearing the buffers in some other way eg. with the
+; ClearScreenBufferAndZBuffer() or ClearScreenBuffer() functions
 ;
 INITCLEARBUFFER = 1
 
