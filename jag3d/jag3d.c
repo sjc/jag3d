@@ -111,7 +111,7 @@ RenderPoints(Particle *particles, short count) {
 // NOTE: This is now done on the GPU as part of SetupFrame()
 
 void
-ClearBuffer(Bitmap *buf)
+ClearBufferAndZBuffer(Bitmap *buf) 
 {
     long zvalue = 0xffffffff;       /* Z value (16.16 fraction) */
 
@@ -128,6 +128,20 @@ ClearBuffer(Bitmap *buf)
     A1_CLIP = 0;
     B_COUNT = ((long)buf->height << 16) | (buf->width);
     B_CMD = UPDA1|DSTWRZ|PATDSEL;
+}
+
+void
+ClearBuffer(Bitmap *buf)
+{
+    B_PATD[0] = buf->clearcolor;
+    B_PATD[1] = buf->clearcolor;
+    A1_BASE = (long)buf->data;
+    A1_STEP = 0x00010000L | ((-buf->width) & 0x0000ffff);
+    A1_FLAGS = buf->blitflags|XADDPHR;
+    A1_PIXEL = 0;
+    A1_CLIP = 0;
+    B_COUNT = ((long)buf->height << 16) | (buf->width);
+    B_CMD = UPDA1|PATDSEL;
 }
 
 /****************************************************************
