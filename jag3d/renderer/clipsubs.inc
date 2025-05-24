@@ -57,7 +57,7 @@ cutedge:
 	move	distB,frac
 	sub	distA,temp0		; temp0 = distB - distA
 	div	temp0,frac		; frac = distA/(distB+distA)
-	moveq	#5,countr		; 6 numbers to calculate
+	moveq	#(XPOINT_COUNT-1),countr		; count of numbers to calculate
 	move	PC,brfpoint		; get the address of "fracpoint" into brfpoint
 	shrq	#1,frac			; make "frac" a 15 bit signed fraction
 	addqt	#6,brfpoint
@@ -91,8 +91,8 @@ fracpoint:
 	jump	PL,(brfpoint)
 	nop
 
-	subqt	#24,A			; restore A and B
-	subqt	#24,B
+	subqt	#SIZEOF_XPOINT,A			; restore A and B
+	subqt	#SIZEOF_XPOINT,B
 
 	jump	(cereturn)
 	addqt	#1,numpoints		; increment number of points written to output polygon
@@ -230,6 +230,7 @@ clip_to_plane:
 	addqt	#4,A
 		store	temp0,(OUT)
 		addqt	#4,OUT
+.if TEXTURES
 	load	(A),temp1
 	addqt	#4,A
 		store	temp1,(OUT)
@@ -238,6 +239,9 @@ clip_to_plane:
 	subqt	#20,A
 	store	temp2,(OUT)
 		addqt	#4,OUT
+.else
+	subqt 	#16,A
+.endif
 
 	cmpq	#0,distB			; if distB < 0
 	addqt	#1,numpoints

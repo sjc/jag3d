@@ -19,6 +19,9 @@
 ;
 ; Configuration Options
 ;
+; INDEXED
+; renderers use indexed (8 bit-per-pixel and below) modes
+;
 ; WIREFRAME
 ; render only wireframes
 ;
@@ -182,9 +185,14 @@ PARTICLES = 0
 ;
 ; GPU code for doing polygon rendering
 ;
-SIZEOF_XPOINT	equ	(6*4)	; Xpoint size in bytes, 6 longs per point
+.if TEXTURES
+XPOINT_COUNT 	equ (6) 	; x,y,z,i,u,v
+.else
+XPOINT_COUNT 	equ (4) 	; x,y,z,i
+.endif
+SIZEOF_XPOINT	equ	(XPOINT_COUNT*4) 	; Xpoint size in bytes, XPOINT_COUNT longs per point
 SIZEOF_POLYGON	equ	((1+((SIZEOF_XPOINT/4)*(POLYSIDES+5)))*4) 
-							; polygon size in bytes: 1 long for num. points, + 6 longs per point
+							; polygon size in bytes: 1 long for num. points, + XPOINT_COUNT longs per point
 							;	+ an additional 5 points (max) for if the poly is clipped
 
 	.extern	_params

@@ -329,7 +329,7 @@ reallysetxpoint:
 	addqt	#4,altpgon
 .else
 	store	basei,(altpgon)
-	addqt	#12,altpgon		; skip U and V
+	addqt	#(SIZEOF_XPOINT-12),altpgon		; skip U and V
 .endif
 	load	(tri),temp2		; get the next point index from DRAM
 

@@ -157,7 +157,7 @@ Z		.equr	r15,1
 	subq	#1,vertsrem		; interleaved
 	store	Z,(pt)
 	jump	PL,(persploop)
-	addqt	#16,pt			; move to next point
+	addqt	#(SIZEOF_XPOINT-8),pt			; move to next point
 
 ;*
 ; end of perspective transform

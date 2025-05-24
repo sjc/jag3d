@@ -251,10 +251,9 @@ polyloop:
 		moveta	temp0,rightu
 		load	(right),temp1
 		addqt	#4,right
-		;moveta	temp0,rightu
 		moveta	temp1,rightv
 .else
-		addqt	#8,right
+	; assumes SIZEOF_XPOINT == 16, so nothing to do
 .endif
 
 		cmp	right,end

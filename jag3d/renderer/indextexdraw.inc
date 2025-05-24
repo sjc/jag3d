@@ -70,18 +70,15 @@ textrap:
 ; set up the source registers (or as many as we can)
 ;
 	move 	a1_ptr,atemp2
+		moveq	#3,atemp1 		; XADDINC == 0x00030000
 	subqt 	#(A1_PIXEL-A1_BASE),atemp2
+		shlq 	#16,atemp1
 	store	srcaddr,(atemp2)
-
-	moveq	#3,atemp1 		; XADDINC == 0x00030000
-	shlq 	#16,atemp1
-	or		srcflags,atemp1	
+		or		srcflags,atemp1	
 	addqt	#4,atemp2
+		shrq	#16,ay						; strip fractional part of ay
 	store	atemp1,(atemp2)
-
-		; TODO: replace with AND if we can spare a reg
-	shrq	#16,ay						; strip fractional part of ay
-	shlq	#16,ay
+		shlq	#16,ay
 
 	movei	#texdone,atemp0
 	subq	#1,anumlines
