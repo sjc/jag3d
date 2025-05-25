@@ -48,16 +48,13 @@ thisplane	.equr	r4
 	cmpq	#0,orclips				; all done clipping?
 	jr	EQ,.nomoreclips
 	shrq	#1,orclips
-	jr	CC,.dontclip
+	jr	CC,.cloop 					; was .dontclip but we don't do anything there now
 	addqt 	#16,thisplane
 
 		move	PC,return			; clip to this plane
 		jump	(subr)				; (subr still contains clip_to_plane)
-		addqt	#6,return
-.dontclip:
-		;addqt	#16,thisplane			; move to next plane
-		jr	.cloop
-		nop
+		subqt 	#10,return 			; back to .cloop, since we're setup for the next plane
+
 .nomoreclips:
 
 .if (^^defined PROFILING)

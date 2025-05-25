@@ -142,21 +142,6 @@ texline1:
 	sharq	#(14-10),b_uinc
 
 ;
-; calculate b_zinc
-;
-;	move	rightz,b_zinc		; find delta Z
-;	sub		leftz,b_zinc
-;	move	b_zinc,atemp0		; atemp0 will hold the fractional part of delta Z
-;	sharq	#16,b_zinc		; put integer part of delta Z in low word
-;	imult	atemp1,atemp0		; multiply fractional part by reciprocal of line length
-;								;	(a 14 bit number)
-;	imult	atemp1,b_zinc		; multiply integer part by reciprocal of line length
-;								;	(a 14 bit number)
-;	sharq	#14,atemp0		; normalize fractional product
-;	shlq	#2,b_zinc		; normalize integer product
-;	add		atemp0,b_zinc
-
-;
 ; now set up b_uinc so it is the integer part of A1_INC, b_vinc so it is the fractional part
 ;
 	move	b_vinc,atemp0
@@ -199,14 +184,8 @@ texline1:
 	store	b_uinc,(a1_ptr) 				; set A1_INC
 	addqt	#(A1_FINC-A1_INC),a1_ptr
 
-	;store	leftz,(bz3_ptr)					; set up the Z value
-
 	store	b_vinc,(a1_ptr) 				; set A1_FINC
 	subqt	#(A1_FINC-A1_PIXEL),a1_ptr 	;	 reset to A1_PIXEL
-
-	;move 	bz3_ptr,atemp2
-	;subqt	#(B_Z3-B_ZINC),atemp2 		; == B_ZINC
-	;store	b_zinc,(atemp2)
 
 	store	bcmdval,(bcmd_ptr)			; start the first blit
 
@@ -215,10 +194,6 @@ texline1:
 ; come here if a zero length line was encountered
 ;
 texzerocount:
-	;movefa	leftistep,atemp1
-	;movefa	leftzstep,atemp0
-	;add		atemp1,lefti
-	;add		atemp0,leftz
 	add		rightxstep,rightx
 	add		leftxstep,leftx
 	movefa	leftvstep,atemp0
@@ -229,8 +204,6 @@ texzerocount:
 	movefa	rightustep,atemp1
 	add		atemp0,rightv
 	add		atemp1,rightu
-	;movefa	rightzstep,atemp0
-	;add		atemp0,rightz
 
 	movei	#texline1,atemp1 ; TODO: find a register for this
 	shrq	#16,ay				; isolate just the Y value

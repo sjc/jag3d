@@ -185,10 +185,19 @@ PARTICLES = 0
 ;
 ; GPU code for doing polygon rendering
 ;
+.if INDEXED
+.if TEXTURES
+; we keep Z as it's used for perspective correction
+XPOINT_COUNT 	equ (5) 	; x,y,z,u,v
+.else
+XPOINT_COUNT 	equ (3) 	; x,y,z
+.endif
+.else
 .if TEXTURES
 XPOINT_COUNT 	equ (6) 	; x,y,z,i,u,v
 .else
 XPOINT_COUNT 	equ (4) 	; x,y,z,i
+.endif
 .endif
 SIZEOF_XPOINT	equ	(XPOINT_COUNT*4) 	; Xpoint size in bytes, XPOINT_COUNT longs per point
 SIZEOF_POLYGON	equ	((1+((SIZEOF_XPOINT/4)*(POLYSIDES+5)))*4) 

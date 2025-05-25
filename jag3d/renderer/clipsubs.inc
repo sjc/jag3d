@@ -212,35 +212,46 @@ clip_to_plane:
 		movei	#.donewithA,cereturn	; try cutting B
 		jump	(braddr)		; call cutedge
 		nop				; (the call will return to .donewithA)
+
 .distAplus:
 	; copy point A to OUT
-	load	(A),temp0
+	load	(A),temp0  		; copy x
 	addqt	#4,A
 		store	temp0,(OUT)
 		addqt	#4,OUT
-	load	(A),temp1
+	load	(A),temp1 		; copy y
 	addqt	#4,A
 		store	temp1,(OUT)
 		addqt	#4,OUT
-	load	(A),temp2
+	load	(A),temp2 		; copy z
 	addqt	#4,A
 		store	temp2,(OUT)
 		addqt	#4,OUT
-	load	(A),temp0
+.if INDEXED = 0
+	load	(A),temp0 		; copy i
 	addqt	#4,A
 		store	temp0,(OUT)
 		addqt	#4,OUT
+.endif ; INDEXED = 0
 .if TEXTURES
-	load	(A),temp1
+	load	(A),temp1  		; copy u
 	addqt	#4,A
 		store	temp1,(OUT)
 		addqt	#4,OUT
-	load	(A),temp2
+	load	(A),temp2 		; copy v
+.if INDEXED = 0
 	subqt	#20,A
+.else
+	subqt 	#16,A
+.endif ; INDEXED = 0
 	store	temp2,(OUT)
 		addqt	#4,OUT
 .else
+.if INDEXED = 0
 	subqt 	#16,A
+.else
+	subqt 	#12,A
+.endif
 .endif
 
 	cmpq	#0,distB			; if distB < 0

@@ -313,10 +313,13 @@ reallysetxpoint:
 	shlq	#24,clipcodes
 	mult	xcolori,basei		; multiply by polygon's intensity
 	shrq	#24,clipcodes
+
 .if TEXTURES
 	move	uv,temp0		; put V into temp0
+.if INDEXED = 0
 	store	basei,(altpgon)		; store I
 	addqt	#4,altpgon
+.endif ; INDEXED = 0
 	shrq	#8,uv			; isolate U
 	shlq	#24,temp0		; isolate V
 	shlq	#8,uv			; now uv = U as a 16 bit unsigned number
@@ -328,9 +331,14 @@ reallysetxpoint:
 	store	temp0,(altpgon)		; store V
 	addqt	#4,altpgon
 .else
+.if INDEXED = 0
 	store	basei,(altpgon)
 	addqt	#(SIZEOF_XPOINT-12),altpgon		; skip U and V
-.endif
+.else
+	; for non-textured indexed, Xpoint == 12 so we're already pointing at the next value
+.endif ; INDEXED = 0
+.endif ; TEXTURES
+
 	load	(tri),temp2		; get the next point index from DRAM
 
 	and	clipcodes,andclips
