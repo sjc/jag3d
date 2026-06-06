@@ -275,6 +275,8 @@ col4b       .equr   r7,0
     move    temp1,yposn
     move    temp2,zposn
 
+.if INDEXED = 0 ; skip light calculations
+
 ;*
 ; Transform lights to object space
 ; srclmodel points to the source lighting model
@@ -389,6 +391,7 @@ one     .equr   r21,1
     .equrundef  bright
     .equrundef  one
 
+.endif ; INDEXED = 0
 
 ;*
 ; copy inverse of the camera matrix (destmat) to _GPUM (srcmat)

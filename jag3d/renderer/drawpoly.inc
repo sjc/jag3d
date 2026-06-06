@@ -55,11 +55,16 @@ color		.equr	r13,1		; color for this polygon
 	load	(altpgon),tmap
 .endif ; TEXTURES
 
+.if INDEXED
+	shrq 	#16,color 				; colour index
+.else
 	shrq	#24,color				; isolate color
 	shlq	#8,color
 	move	color,temp0				; duplicate color into a long
 	shlq	#16,color
 	or		temp0,color
+.endif ; INDEXED
+
 	moveta	color,b_color
 
 ;
@@ -67,6 +72,7 @@ color		.equr	r13,1		; color for this polygon
 ;
 	movei	#gourtrap,temp0
 	movei	#gourpoly,temp1
+
 .if TEXTURES
 	cmpq	#0,tmap
 	jr	EQ,.funcsok
@@ -74,9 +80,11 @@ color		.equr	r13,1		; color for this polygon
 		movei	#textrap,temp0 ; POLYdraw
 		movei	#texpoly,temp1 ; POLYinit -- wait for blitter
 .funcsok:
-.endif
+.endif ; TEXTURES
+
 	moveta	temp0,atemp0		; save per-trapezoid function in atemp0
 	moveta	temp1,atemp1		; save per-polygon function in atemp1
+
 	.equrundef	color
 	.equrundef	tmap
 
@@ -169,9 +177,14 @@ innerloop	.equr	return		; inner loop branch address
 ; set up initial left and right values
 ;
 	load	(left),temp0			; temp0 = (left->x << 16)
+.if INDEXED = 0
 	addqt	#8,left				; skip X and Y
+.else
+	addqt 	#12,left 			; skip X, Y and Z
+.endif ; INDEXED = 0
 	moveta	temp0,leftx
 	moveta	temp0,rightx
+.if INDEXED = 0
 	load	(left),temp0			; temp0 = left->z
 	addqt	#4,left
 	load	(left),temp1			; temp1 = left->i
@@ -179,7 +192,10 @@ innerloop	.equr	return		; inner loop branch address
 	moveta	temp0,leftz
 	moveta	temp1,lefti
 	moveta	temp0,rightz
-	moveta	temp1,righti ; IS THIS CORRECT? was `rightz`, changed to `righti`
+	moveta	temp1,righti
+.endif
+
+	; left -> u
 
 .if TEXTURES
 
@@ -188,14 +204,22 @@ innerloop	.equr	return		; inner loop branch address
 	load	(left),temp0			; temp0 = left->u
 	addqt	#4,left
 	load	(left),temp1			; temp1 = left->v
+.if INDEXED = 0
 	subqt	#20,left			; move back to start
+.else
+	subqt 	#16,left			; move back to start
+.endif ; INDEXED = 0
 	moveta	temp0,leftu
 	moveta	temp1,leftv
 	moveta	temp0,rightu
 	moveta	temp1,rightv
 .else
+.if INDEXED = 0
 	subqt	#16,left
-.endif
+.else
+	subqt	#12,left
+.endif ; INDEXED = 0
+.endif ; TEXTURES
 
 ;
 ; main loop goes here
@@ -224,13 +248,18 @@ polyloop:
 		load	(right),temp0		; temp0 = current right->x	 (branch optimization)
 		addqt	#8,right
 		moveta	temp0,rightx
+
+.if INDEXED = 0
 		load	(right),temp1
 		addqt	#4,right
-		;moveta	temp0,rightx
 		moveta	temp1,rightz
 		load	(right),temp0		; temp0 = lefti
 		addqt	#4,right
 		moveta	temp0,righti
+.else
+		addqt 	#4,right 	; skip z, there is no i
+.endif ; INDEXED = 0
+
 .if TEXTURES
 
 		; TODO: check if this face has a texture
@@ -240,11 +269,10 @@ polyloop:
 		moveta	temp0,rightu
 		load	(right),temp1
 		addqt	#4,right
-		;moveta	temp0,rightu
 		moveta	temp1,rightv
 .else
-		addqt	#8,right
-.endif
+	; assumes `right` now points to next point, so nothing to do
+.endif ; TEXTURES
 
 		cmp	right,end
 		jr	NE,.norightwrap
@@ -289,6 +317,7 @@ polyloop:
 
 		moveta	nextval,rightxstep
 
+.if INDEXED = 0
 		movefa	rightz,temp0
 		movefa	righti,temp1
 		load	(right),nextval		; nextval = right->z
@@ -318,6 +347,9 @@ polyloop:
 		sha	nlnorm,nextval
 
 		move	nextval,rightistep
+.else
+		addqt 	#4,right 	; right -> u
+.endif
 
 .if TEXTURES
 
@@ -325,10 +357,15 @@ polyloop:
 
 		load	(right),nextval		; nextval = right->u
 		addqt	#4,right
-		movefa	rightu,temp0 ; from below
+		movefa	rightu,temp0
 		load	(right),temp2		; temp2 = right->v
+
+.if INDEXED = 0
 		subqt	#20,right
-		;movefa	rightu,temp0
+.else
+		subqt 	#16,right
+.endif ; INDEXED = 0
+
 		movefa	rightv,temp1
 		sub	temp0,nextval		; now nextval = nextright->u - curright->u
 		sub	temp1,temp2		; and temp2 = nextright->v - curright->v
@@ -354,8 +391,12 @@ polyloop:
 
 		move	nextval,rightvstep
 .else
+.if INDEXED = 0
 		subqt	#16,right
-.endif
+else
+		subqt 	#12,right
+.endif ; INDEXED = 0
+.endif ; TEXTURES
 
 doneright:
 
@@ -371,6 +412,14 @@ doneright:
 	subq	#1,vertsrem
 	jump	MI,(temp2)			; temp2 still contains "doneleft"
 	nop
+
+.if INDEXED
+		load	(left),temp0		; temp0 = left->x		
+		moveta	temp0,leftx
+.if TEXTURES
+		addqt 	#12,left 	; left -> u
+.endif ; TEXTURES
+.else
 		load	(left),temp0		; temp0 = left->x		
 		addqt	#8,left				; skip X and Y
 		moveta	temp0,leftx
@@ -379,20 +428,29 @@ doneright:
 		moveta	temp0,leftz
 		load	(left),temp1		; temp1 = lefti
 .if TEXTURES
-		addqt	#4,left
+		addqt	#4,left 	; left -> u
 .else
 		subqt	#12,left		; move back to start of poly
-.endif
+.endif ; TEXTURES
 		moveta	temp1,lefti
+.endif ; INDEXED
+
+	; left -> u
 
 .if TEXTURES
 		load	(left),temp1		; temp1 = left->u
 		addqt	#4,left
 		moveta	temp1,leftu
 		load	(left),temp0		; temp2 = left->v
+.if INDEXED = 0
 		subqt	#20,left		; reset to beginning
+.else
+		subqt 	#16,left		; reset to beginning
+.endif ;INDEXED = 0
 		moveta	temp0,leftv
-.endif
+.endif ; TEXTURES
+
+	; left -> x
 
 		; if (left == start) left = end
 		cmp	start,left
@@ -441,6 +499,7 @@ doneright:
 
 		moveta	nextval,leftxstep
 
+.if INDEXED = 0
 		movefa	leftz,temp0
 		movefa	lefti,temp1
 		load	(left),nextval		; nextval = left->z
@@ -470,7 +529,9 @@ doneright:
 		sha	nlnorm,nextval
 
 		move	nextval,leftistep
-
+.else
+		addqt 	#4,left 	; left -> u
+.endif
 
 .if TEXTURES
 
@@ -479,7 +540,11 @@ doneright:
 		load	(left),nextval		; nextval = left->u
 		addqt	#4,left
 		load	(left),temp2		; temp2 = left->v
+.if INDEXED = 0
 		subqt	#20,left
+.else
+		subqt 	#16,left
+.endif
 		movefa	leftu,temp0
 		movefa	leftv,temp1
 		sub	temp0,nextval
@@ -506,8 +571,13 @@ doneright:
 
 		move	nextval,leftvstep
 .else
+.if INDEXED = 0
 		subqt	#16,left
-.endif
+.else
+		subqt 	#12,left
+.endif ; INDEXED = 0
+.endif ; TEXTURED
+
 doneleft:
 
 ; TRAPEZOID DRAW GOES HERE

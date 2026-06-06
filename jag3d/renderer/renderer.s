@@ -19,6 +19,9 @@
 ;
 ; Configuration Options
 ;
+; INDEXED
+; renderers use indexed (8 bit-per-pixel and below) modes
+;
 ; WIREFRAME
 ; render only wireframes
 ;
@@ -37,6 +40,7 @@
 ;
 
 ; "Wire Frames" (wfrend.s)
+;INDEXED 	= 	0
 ;WIREFRAME	=	1
 ;PHRASEMODE	=	0
 ;TEXTURES	=	0
@@ -44,6 +48,7 @@
 ;POLYSIDES	=	3
 
 ; "Gouraud Only" (gourrend.s)
+;INDEXED 	= 	0
 ;WIREFRAME	=	0
 ;PHRASEMODE	=	0
 ;TEXTURES	=	0
@@ -51,6 +56,7 @@
 ;POLYSIDES	=	4
 
 ; "Phrase Mode Gouraud" (gourphr.s)
+;INDEXED 	= 	0
 ;WIREFRAME	=	0
 ;PHRASEMODE	=	1
 ;TEXTURES	=	0
@@ -58,6 +64,7 @@
 ;POLYSIDES	=	4
 
 ; "Unshaded Textures" (texrend.s)
+INDEXED 	= 	0
 WIREFRAME	=	0
 PHRASEMODE	=	0
 TEXTURES	=	1
@@ -65,6 +72,7 @@ TEXSHADE	=	0
 POLYSIDES	=	4
 
 ; "Flat Shaded Textures" (flattex.s)
+;INDEXED 	= 	0
 ;WIREFRAME	=	0
 ;PHRASEMODE	=	0
 ;TEXTURES	=	1
@@ -73,12 +81,36 @@ POLYSIDES	=	4
 
 ; "Gouraud Shaded Textures" (gstex.s)
 ; NOTE: You must call FixModelTextures() on each textured model in this mode
+;INDEXED 	= 	0
 ;WIREFRAME	=	0
 ;PHRASEMODE	=	0
 ;TEXTURES	=	1
 ;TEXSHADE	=	2
 ;POLYSIDES	=	4
 
+; "Indexed Mode Wire Frames"
+;INDEXED 	= 	1
+;WIREFRAME	=	1
+;PHRASEMODE	=	0
+;TEXTURES	=	0
+;TEXSHADE	=	0
+;POLYSIDES	=	3
+
+; "Indexed Mode Untextured"
+;INDEXED 	= 	1
+;WIREFRAME	=	0
+;PHRASEMODE	=	0
+;TEXTURES	=	0
+;TEXSHADE	=	0
+;POLYSIDES	=	4
+
+; "Indexed Mode Textured"
+;INDEXED 	= 	1
+;WIREFRAME	=	0
+;PHRASEMODE	=	0
+;TEXTURES	=	1
+;TEXSHADE	=	0
+;POLYSIDES	=	4
 
 ;
 ; MAX_LIGHTS
@@ -116,6 +148,8 @@ TEXSHADE2BUF = 0
 ; TRANSPARENTPIXEL as transparent when drawing a texture. The other
 ; texture-mapping modes do this implicitly as part of the multi-buffer
 ; approach
+;	For "Indexed Mode Textured", pixels with value 0 are treated as
+; transparent and not copied into the screen buffer.
 ;
 TRANSPARENTTEX = 1
 
@@ -129,10 +163,14 @@ TRANSPARENTTEX = 1
 ; Set to 1 to select CrY $1111 (yellow) -- which is the default -- or to 
 ; 0 to select CrY $0000 (black)
 ;
+; This is not used for "Indexed Mode Textured".
+;
 TRANSPARENTPIXEL = 0
 
 ;
-; Whether to clear the buffer passed to frameinit
+; Whether to clear the buffers passed to frameinit. If set to 0 then you
+; are responsible for clearing the buffers in some other way eg. with the
+; ClearScreenBufferAndZBuffer() or ClearScreenBuffer() functions
 ;
 INITCLEARBUFFER = 1
 
@@ -147,10 +185,24 @@ PARTICLES = 0
 ;
 ; GPU code for doing polygon rendering
 ;
-SIZEOF_POLYGON	equ	(1+(6*(POLYSIDES+5)))		; polygon size in longs: 1 long for num. points, + 6 longs per point
-							; make sure to allow 1 point per clipping plane for clipping
-							; output relults!
-SIZEOF_XPOINT	equ	24		; Xpoint size in bytes
+.if INDEXED
+.if TEXTURES
+; we keep Z as it's used for perspective correction
+XPOINT_COUNT 	equ (5) 	; x,y,z,u,v
+.else
+XPOINT_COUNT 	equ (3) 	; x,y,z
+.endif
+.else
+.if TEXTURES
+XPOINT_COUNT 	equ (6) 	; x,y,z,i,u,v
+.else
+XPOINT_COUNT 	equ (4) 	; x,y,z,i
+.endif
+.endif
+SIZEOF_XPOINT	equ	(XPOINT_COUNT*4) 	; Xpoint size in bytes, XPOINT_COUNT longs per point
+SIZEOF_POLYGON	equ	((1+((SIZEOF_XPOINT/4)*(POLYSIDES+5)))*4) 
+							; polygon size in bytes: 1 long for num. points, + XPOINT_COUNT longs per point
+							;	+ an additional 5 points (max) for if the poly is clipped
 
 	.extern	_params
 
@@ -278,6 +330,9 @@ gpudone:
 	.include	"clipsubs.inc"
 
 .if TEXTURES
+.if INDEXED = 1
+	.include 	"indextexdraw.inc"
+.else
 .if TEXSHADE = 2
 	.include	"texdraw2.inc"
 .else
@@ -288,12 +343,17 @@ gpudone:
 .endif
 .endif
 .endif
+.endif
 
 .if WIREFRAME = 0
 .if PHRASEMODE
 	.include 	"phrdraw.inc"
 .else
+.if INDEXED = 1
+	.include 	"indexdraw.inc"
+.else
 	.include	"gourdraw.inc"
+.endif
 .endif
 .endif
 
@@ -322,9 +382,12 @@ _GPUscplanes:
 	.dc.l	 0,  1, 1, 0
 	.dc.l	 0, -1, 1, 0
 
+.if INDEXED = 0
 	; lighting model: 4 bytes + 8 bytes per light
 _GPUTLights:
 	.dcb.l	1+(2*MAX_LIGHTS),0		; room for 8 lights
+.endif
+
 ;
 ; variables
 ;
@@ -425,8 +488,8 @@ initcode:
 	.globl	_gpubuf
 
 _GPUP1	=	initcode
-_GPUP2	=	_GPUP1 + (4*SIZEOF_POLYGON)
-_gpubuf = 	_GPUP2 + (4*SIZEOF_POLYGON)
+_GPUP2	=	_GPUP1 + SIZEOF_POLYGON
+_gpubuf = 	_GPUP2 + SIZEOF_POLYGON
 ; _gpubuf must be phrase aligned!
 ; _gpubuf is only used by texdraw1 (if TEXSHADE	= 1)
 

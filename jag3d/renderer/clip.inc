@@ -48,16 +48,13 @@ thisplane	.equr	r4
 	cmpq	#0,orclips				; all done clipping?
 	jr	EQ,.nomoreclips
 	shrq	#1,orclips
-	jr	CC,.dontclip
+	jr	CC,.cloop 					; was .dontclip but we don't do anything there now
 	addqt 	#16,thisplane
 
 		move	PC,return			; clip to this plane
 		jump	(subr)				; (subr still contains clip_to_plane)
-		addqt	#6,return
-.dontclip:
-		;addqt	#16,thisplane			; move to next plane
-		jr	.cloop
-		nop
+		subqt 	#10,return 			; back to .cloop, since we're setup for the next plane
+
 .nomoreclips:
 
 .if (^^defined PROFILING)
@@ -85,8 +82,8 @@ Z		.equr	r15,1
 ;
 
 	move	pgon,pt
-	addqt	#4,pt
 	load	(pgon),vertsrem	; get number of points in polygon
+	addqt	#4,pt
 	movefa	altskip,temp1
 	cmpq	#3,vertsrem	; fewer than 3 points left?
 	jump	MI,(temp1)
@@ -157,7 +154,7 @@ Z		.equr	r15,1
 	subq	#1,vertsrem		; interleaved
 	store	Z,(pt)
 	jump	PL,(persploop)
-	addqt	#16,pt			; move to next point
+	addqt	#(SIZEOF_XPOINT-8),pt			; move to next point
 
 ;*
 ; end of perspective transform

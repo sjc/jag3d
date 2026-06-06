@@ -57,7 +57,7 @@ cutedge:
 	move	distB,frac
 	sub	distA,temp0		; temp0 = distB - distA
 	div	temp0,frac		; frac = distA/(distB+distA)
-	moveq	#5,countr		; 6 numbers to calculate
+	moveq	#(XPOINT_COUNT-1),countr		; count of numbers to calculate
 	move	PC,brfpoint		; get the address of "fracpoint" into brfpoint
 	shrq	#1,frac			; make "frac" a 15 bit signed fraction
 	addqt	#6,brfpoint
@@ -91,8 +91,8 @@ fracpoint:
 	jump	PL,(brfpoint)
 	nop
 
-	subqt	#24,A			; restore A and B
-	subqt	#24,B
+	subqt	#SIZEOF_XPOINT,A			; restore A and B
+	subqt	#SIZEOF_XPOINT,B
 
 	jump	(cereturn)
 	addqt	#1,numpoints		; increment number of points written to output polygon
@@ -119,9 +119,9 @@ clip_to_plane:
 	addqt	#4,B
 	mult	vertsrem,A
 	add		B,A
+		move	altpgon,OUT
 	subqt	#SIZEOF_XPOINT,A		; A = &pgon->pt[vertsrem-1]
-	move	altpgon,OUT
-	addqt	#4,OUT				; OUT = &altpgon->pt[0]
+		addqt	#4,OUT				; OUT = &altpgon->pt[0]
 
 	moveq	#0,numpoints
 ;
@@ -212,35 +212,50 @@ clip_to_plane:
 		movei	#.donewithA,cereturn	; try cutting B
 		jump	(braddr)		; call cutedge
 		nop				; (the call will return to .donewithA)
+
 .distAplus:
 	; copy point A to OUT
-	load	(A),temp0
+	load	(A),temp0  		; copy x
 	addqt	#4,A
-	load	(A),temp1
+		store	temp0,(OUT)
+		addqt	#4,OUT
+	load	(A),temp1 		; copy y
 	addqt	#4,A
-	load	(A),temp2
+		store	temp1,(OUT)
+		addqt	#4,OUT
+	load	(A),temp2 		; copy z
 	addqt	#4,A
-	store	temp0,(OUT)
-	addqt	#4,OUT
-	store	temp1,(OUT)
-	addqt	#4,OUT
-	store	temp2,(OUT)
-	addqt	#4,OUT
-	load	(A),temp0
+		store	temp2,(OUT)
+		addqt	#4,OUT
+.if INDEXED = 0
+	load	(A),temp0 		; copy i
 	addqt	#4,A
-	load	(A),temp1
+		store	temp0,(OUT)
+		addqt	#4,OUT
+.endif ; INDEXED = 0
+.if TEXTURES
+	load	(A),temp1  		; copy u
 	addqt	#4,A
-	load	(A),temp2
+		store	temp1,(OUT)
+		addqt	#4,OUT
+	load	(A),temp2 		; copy v
+.if INDEXED = 0
 	subqt	#20,A
-	store	temp0,(OUT)
-	addqt	#4,OUT
-	store	temp1,(OUT)
-	addqt	#4,OUT
+.else
+	subqt 	#16,A
+.endif ; INDEXED = 0
 	store	temp2,(OUT)
-	addqt	#4,OUT
-	addqt	#1,numpoints
+		addqt	#4,OUT
+.else
+.if INDEXED = 0
+	subqt 	#16,A
+.else
+	subqt 	#12,A
+.endif
+.endif
 
 	cmpq	#0,distB			; if distB < 0
+	addqt	#1,numpoints
 	jr	PL,.donewithA
 	nop					;   then
 		move	B,temp0			; swap A and B
