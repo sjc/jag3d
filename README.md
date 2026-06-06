@@ -73,6 +73,10 @@ The type of renderer to use should be chosen by un-commenting the appropriate bl
 
 If the "Gouraud Shaded Textures" version is used, the `FixModelTextures()` function should be run on each of your models. (NOTE: This renderer doesn't run well at the moment, probably due to lack of buffer memory in the GPU. This should improve in the future.)
 
+### Indexed Mode Renderers
+
+Renderers which target indexed (8bpp and below) modes have been added. They are selectable by un-commenting the appropriate section in `renderer.s`. The `demo.c` contains an example of setting up the screen buffers for these modes. These cannot use the Gouraud shading or z-buffer features of the blitter. The light model parameter of the render call is ignored, and the caller is responsible for sorting the objects to be rendered into back-to-front order.
+
 ## Setup and Rendering
 
 Load the renderer into GPU memory with `LoadAndInitRenderer()`. This takes no parameters and will load and initialise the default renderer, built from `renderer.s`. 
@@ -90,15 +94,11 @@ Each object is rendered to the current buffer using `RenderObject()`. This takes
 
 *Note:* Since the GPU will be reading data from (and in the case of the scratch memory, writing data to) each of the areas of memory these pointers point to, it is essential to have them aligned on longword (4 byte) boundaries. The best approach for this would be to allocate them in an assembly language file's `.bss` section with `.long` alignment. Next best is the approach shown in the demo code, where `malloc()` is used to request a buffer slightly larger than required, the address of which is then aligned.
 
-(TODO: It should be possible, if using one of the smaller renderers and models with a small number of points, to have `tpoints` reference an area of GPU memory. This needs testing.)
+It is be possible, if using one of the smaller renderers and models with a small number of points, to use the space at the end of GPU memory pointed-to by `_gpubuf` as the Tpoint scratch memory. There must be 16 bytes free for each point in your largest model.
 
 ## Multiple Renderers
 
 Multiple renderers should be possible by duplicating the main `renderer.s` file, renaming the exposed symbols (`renderer_code`, `renderer_init`, `renderer_frameinit` and `renderer_objinit`) and using the `…Custom()` versions of the functions described above. This has not yet been tested. It will be documented once it has.
-
-## Indexed Mode Renderers
-
-Renderers which target indexed -- 8bpp and below -- modes have been added. These cannot use the Gouraud shading or z-buffer features of the blitter. `demo.c` contains an example of setting up the screen buffers for these modes.
 
 ## 3D Sprites and Billboards
 

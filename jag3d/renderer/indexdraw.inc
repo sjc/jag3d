@@ -6,10 +6,7 @@
 ; b_zinc
 
 bcount_ptr	.equr	srcaddr			; address of B_COUNT
-bi3_ptr		.equr	srcflags		; address of B_I3
 traploop	.equr	leftu
-biinc_ptr	.equr	rightu
-bzinc_ptr	.equr	leftv
 
 ;
 ; SET-UP ROUTINE FOR FLAT-SHADED POLYGONS
@@ -135,8 +132,5 @@ gourdone:
 	movefa 	gflags,atemp1 		; setup for the code we're returning to
 
 
-	.equrundef	bi3_ptr
 	.equrundef	bcount_ptr
 	.equrundef	traploop
-	.equrundef	biinc_ptr
-	.equrundef	bzinc_ptr
