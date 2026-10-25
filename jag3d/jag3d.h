@@ -39,16 +39,34 @@ void ClearScreenBuffer(Bitmap *buf);
 // Return an 'angle' in the range 0-2047 representing the rotation defined by the
 //  vector. The parameter names `x` and `y` are just placeholders, the angle can
 //  be defined in any 2D plane.
+// NOTE: Although this function currently returns a value which coincides with
+//  ROTSTEPS (described below) it is not tied to ROTSTEPS in any way
 short AngleAlongVector(short x, short y);
 
 /*
  * Transforms
  */
 
-// assuming 2048 step rotation, these can be used to clamp values
-#define ROTMASK 0x7FF
+//
+// Number of discrete steps in a full rotation
+// This is used as the angle value in the Transform struct
+// If you need to change this:
+//  - The value should be a power of 2
+//  - You will need to update renderer/gpumatrix.inc
+//  - You will need to generate new tables to replace lib/sincos.s
+//  - You will also either need to replace the vector tables used in game logic, or
+//      take into acount the difference in ROTSTEP when indexing into them
+//  - You should take into account that AngleAlongVector() will still return a value
+//      in the range 0-2047
+//
+#define ROTSTEPS 2048
+#define ROTMASK  (ROTSTEPS-1)
 #define AddRotation(a,b)    ((a+b)&ROTMASK)
 #define SubRotation(a,b)    ((a-b)&ROTMASK)
+
+#define ROT45DEG    (ROTSTEPS/8)
+#define ROT90DEG    (ROTSTEPS/4)
+#define ROT180DEG   (ROTSTEPS/2) 
 
 /*
  * Texture Helpers

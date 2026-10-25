@@ -57,7 +57,7 @@ A directory can contain multiple model files.
 
 The interface to the library (described below) requires two pieces of information to represent the model to be rendered: the model data (`N3DObjdata`, described above) and a `Transform`.
 
-The `Transform` contains the position (`xpos`, `ypos`, `zpos`) and rotation around each axis (`alpha` `beta` and `gamma` for x, y and z axis) of the object in world space. This struct was named `angles` in the original `demo.c` code. Rotations by default are represented by a value between 0 and 2047, so that each step represent 1/1024 of Pi and there are 2048 steps in a complete rotation. The `AddRotation()` and `SubRotation()` macros can be used to keep these values clamped, although this is not required by the renderer.
+The `Transform` contains the position (`xpos`, `ypos`, `zpos`) and rotation around each axis (`alpha` `beta` and `gamma` for x, y and z axis) of the object in world space. This struct was named `angles` in the original `demo.c` code. Rotations by default are represented by a value between 0 and `ROTSTEP` - 1. By default, `ROTSTEP` is 2048, so that each step represent 1/1024 of Pi and there are 2048 steps in a complete rotation. The `AddRotation()` and `SubRotation()` macros can be used to keep these values clamped. This is not required by the renderer, but it is good practice. There are also `ROT45DEG`, `ROT90DEG` and `ROT180DEG` constants.
 
 The camera's position and rotation are also represented by an instance of `Transform`.
 

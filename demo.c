@@ -428,7 +428,7 @@ main()
 		}
 
 		// 'billboard' the 3D sprite so it's always square-on to the camera
-		jaguar_logo_trans->beta = AddRotation(camangles->beta, 1024);
+		jaguar_logo_trans->beta = AddRotation(camangles->beta, ROT180DEG);
 
 		RenderObject(&jaguar_logo_3d_sprite, jaguar_logo_trans, &nolightm, tpoints);
 
@@ -496,11 +496,11 @@ main()
 
 		// 4/6 LT/RT sidesteps
 		if (buts & KEY_4) {
-			short index = SubRotation(camangles->beta, 512) << 1;
+			short index = SubRotation(camangles->beta, ROT90DEG) << 1;
 			camangles->xpos += vectors_100[index];
 			camangles->zpos += vectors_100[index+1];
 		} else if (buts & KEY_6) {
-			short index = AddRotation(camangles->beta, 512) << 1;
+			short index = AddRotation(camangles->beta, ROT90DEG) << 1;
 			camangles->xpos += vectors_100[index];
 			camangles->zpos += vectors_100[index+1];
 		}
