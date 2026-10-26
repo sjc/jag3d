@@ -17,10 +17,11 @@ material	.equr	r10
 ; tricount keeps count of whether there are more polygons to check
 ;
 
-	movei	#G_MTXA,g_mtxa
-	movei	#_GPUcampos,campos
+	move 	gflags,g_mtxa
+		movei	#_GPUcampos,campos
+	addqt 	#8,g_mtxa
+		movei	#endtriloop,endloop
 	moveta	g_mtxa,altgmtxa
-	movei	#endtriloop,endloop
 
 bfcull:
 	move	PC,bfculladdr

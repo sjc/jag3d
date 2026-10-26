@@ -276,7 +276,8 @@ _renderer_objinit:
 ;***********************************************************************
 
 triloop:
-	movei 	#skipface,return
+	move pc,return
+	addqt #6,return
 	moveta	return,altskip
 
 	.globl	skipface
