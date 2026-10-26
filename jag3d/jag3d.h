@@ -58,6 +58,7 @@ short AngleAlongVector(short x, short y);
 //      take into acount the difference in ROTSTEP when indexing into them
 //  - You should take into account that AngleAlongVector() will still return a value
 //      in the range 0-2047
+// The `tables.py` tool can be used to generate the sine/cosine and vector tables.
 //
 #define ROTSTEPS 2048
 #define ROTMASK  (ROTSTEPS-1)

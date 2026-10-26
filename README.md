@@ -57,7 +57,7 @@ A directory can contain multiple model files.
 
 The interface to the library (described below) requires two pieces of information to represent the model to be rendered: the model data (`N3DObjdata`, described above) and a `Transform`.
 
-The `Transform` contains the position (`xpos`, `ypos`, `zpos`) and rotation around each axis (`alpha` `beta` and `gamma` for x, y and z axis) of the object in world space. This struct was named `angles` in the original `demo.c` code. Rotations by default are represented by a value between 0 and `ROTSTEP` - 1. By default, `ROTSTEP` is 2048, so that each step represent 1/1024 of Pi and there are 2048 steps in a complete rotation. The `AddRotation()` and `SubRotation()` macros can be used to keep these values clamped. This is not required by the renderer, but it is good practice. There are also `ROT45DEG`, `ROT90DEG` and `ROT180DEG` constants.
+The `Transform` contains the position (`xpos`, `ypos`, `zpos`) and rotation around each axis (`alpha` `beta` and `gamma` for x, y and z axis) of the object in world space. This struct was named `angles` in the original `demo.c` code. Rotations by default are represented by a value between 0 and `ROTSTEPS` - 1. By default, `ROTSTEPS` is 2048, so that each step represent 1/1024 of Pi and there are 2048 steps in a complete rotation. The `AddRotation()` and `SubRotation()` macros can be used to keep these values clamped. This is not required by the renderer, but it is good practice. There are also `ROT45DEG`, `ROT90DEG` and `ROT180DEG` constants.
 
 The camera's position and rotation are also represented by an instance of `Transform`.
 
@@ -148,6 +148,10 @@ The `RunPoints()` function is used to move particles and manage their lifetime. 
 `SizeOfModel()` will calculate the memory needed to hold a copy of a `N3DObjdata` and the arrays of `Point`, `Face` and `Material` it references.
 
 `CopyModelDeep()` will copy a `N3DObjdata` and optionally its points, faces and material arrays. `SizeOfModel()` can be used to calculate the size needed for the destination buffer. `CopyModelDeep()` can also scale the object by an 8.8 fixed-point fraction while copying its points.
+
+## Tools
+
+- `tables.py` can generate tables of vectors to be used for movement. It can also generate new sine/cosine tables if you decide to re-define `ROTSTEPS`.
 
 ## Updating from Atari 3D Demo
 
