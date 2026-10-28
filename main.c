@@ -4,57 +4,18 @@
  * All Rights Reserved.
  */
 
-#include "olist.h"
 #include "font.h"
-#include "blit.h"
 #include "joypad.h"
 #include "string.h"
 #include "stdlib.h"
 
 #include "jag3d/jag3d.h"
 
+#include "screen.h" 	// setting up object lists and draw buffers
+
 /****************************************************************
- *	Defines							*
+ *  Defines                         *
  ****************************************************************/
-
-/* camera width and height */
-#define CAMWIDTH 320
-#define CAMHEIGHT 200
-
-/* the width and height of the screen object */
-#define OBJWIDTH 320
-#define OBJHEIGHT 200
-#define WIDFLAG WID320		// blitter flag corresponding to OBJWIDTH
-
-//
-// Un-comment this define to test indexed mode, along with selecting
-// one of the INDEXED = 1 renderers from renderer.s
-//
-// #define INDEXEDMODE
-
-#ifdef INDEXEDMODE
-// setup for indexed pixels
-#define PIXELFLAG PIXEL8 	// blitter flag corresponding to pixel depth
-#define PIXELSPERPHRASE 8  // how many pixels per 8-byte phrase
-#define DEPTH 3  				// 4 == 16-bit, 3 == 8-bit
-#define S1ZOFFS ZOFFS0   	// offset from screen 1 to z buffer
-#define S2ZOFFS ZOFFS0   	// offset from screen 1 to z buffer
-#define CLEAR_COLOR 0 		// colour index to clear to
-
-#else
-// setup for 16-bit CrY
-#define PIXELFLAG PIXEL16 	// blitter flag corresponding to pixel depth
-#define PIXELSPERPHRASE 4  // how many pixels per 8-byte phrase
-#define DEPTH 4  				// 4 == 16-bit, 3 == 8-bit
-#define S1ZOFFS ZOFFS2   	// offset from screen 1 to z buffer
-#define S2ZOFFS ZOFFS1   	// offset from screen 1 to z buffer
-#define CLEAR_COLOR 0x27a027a0
-
-#endif //INDEXEDMODE
-
-/* length in bytes of a screen line (2 data buffers+1 Z buffer ->
-   3*2 = 6 bytes/pixel */
-#define LINELEN (OBJWIDTH*6L)
 
 /* 1/100th of the clock speed */
 #define MHZ 265900L
@@ -92,7 +53,6 @@ typedef struct model {
  *	External functions					*
  ****************************************************************/
 
-extern void VIDsync(void);			/* waits for a vertical blank interrupt */
 extern int sprintf(char *, const char *, ...);	/* you know what this does */
 
 /* NOTE: clock() is useful only for debugging; it works on
@@ -110,11 +70,6 @@ extern long _timestamp;
 
 /* timing information */
 extern long proftime[];
-
-/* the 2 screen buffers */
-extern short DISPBUF0[], DISPBUF1[];
-#define DATA1 ((char *)DISPBUF0)
-#define DATA2 ((char *)DISPBUF1)
 
 /* the font we'll use for printing stuff on screen */
 extern FNThead usefnt[];
@@ -184,52 +139,6 @@ MODEL models[] = {
 
 #define MODEL_COUNT (sizeof(models)/sizeof(MODEL))
 
-#define OLIST_LEN 2
-
-/* object list for first screen */
-union olist buf1_olist[OLIST_LEN] =
-{
-	{{OL_BITMAP,	/* type */
-	 14+(320-OBJWIDTH)/2, 20+(240-OBJHEIGHT),		/* x, y */
-	 0L,		/* link */
-	 DATA1,		/* data */
-	 OBJHEIGHT, OBJWIDTH*3/PIXELSPERPHRASE, OBJWIDTH/PIXELSPERPHRASE,		/* height, dwidth, iwidth */
-	 DEPTH, 3, 0, 0, 0,	/* depth, pitch, index, flags, firstpix */
-	 0,0,0}},		/* scaling stuff */
-
-	{{OL_STOP}}
-};
-
-/* object list for second screen */
-union olist buf2_olist[OLIST_LEN] =
-{
-	{{OL_BITMAP,	/* type */
-	 14+(320-OBJWIDTH)/2, 20+(240-OBJHEIGHT),		/* x, y */
-	 0L,		/* link */
-	 DATA2,		/* data */
-	 OBJHEIGHT, OBJWIDTH*3/PIXELSPERPHRASE, OBJWIDTH/PIXELSPERPHRASE,		/* height, dwidth, iwidth */
-	 DEPTH, 3, 0, 0, 0,	/* depth, pitch, index, flags, firstpix */
-	 0,0,0}},		/* scaling stuff */
-
-	{{OL_STOP}}
-};
-
-/* Bitmaps for the two screens */
-Bitmap scrn1 = {
-	CAMHEIGHT, CAMWIDTH,
-	PIXELFLAG|PITCH3|S1ZOFFS|WIDFLAG,
-	(void *)(DATA1 + ((OBJWIDTH-CAMWIDTH)*3L) + (((OBJHEIGHT-CAMHEIGHT)/2)*LINELEN) ),
-	CLEAR_COLOR
-};
-
-/* initial data for camera corresponding to second screen buffer */
-Bitmap scrn2 = {
-	CAMHEIGHT, CAMWIDTH,
-	PIXELFLAG|PITCH3|S2ZOFFS|WIDFLAG,
-	(void *)(DATA2 + ((OBJWIDTH-CAMWIDTH)*3L) + (((OBJHEIGHT-CAMHEIGHT)/2)*LINELEN) ),
-	CLEAR_COLOR
-};
-
 Lightmodel lightm = {
 	0x4000,
 	1,
@@ -255,15 +164,6 @@ Lightmodel nolightm = {
 };
 
 extern short vectors_100[];
-
-/****************************************************************
- *	Global variables					*
- ****************************************************************/
-
-/* storage for packed object lists */
-int packed_olist1[160];
-int packed_olist2[160];
-
 
 /****************************************************************
  *	main()							*
@@ -314,12 +214,10 @@ main()
 	jaguar_logo_material_copy.tmap = jaguar_logo_material.tmap;
 #endif
 
-	/* build packed versions of the two object lists */
-	/* (output is double buffered)			 */
-	OLbldto(buf1_olist, packed_olist1, OLIST_LEN);
-	OLbldto(buf2_olist, packed_olist2, OLIST_LEN);
+	/* build object lists from the definitions in screen.h */
+	setup_object_lists();
 
-	/* initialize the video */
+	/* set the initial object list */
 	OLPset(packed_olist2);
 
 	/* wait for video sync (paranoid code) */

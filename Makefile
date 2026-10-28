@@ -49,7 +49,7 @@ $(LIBJAG): $(LIBOBJS)
 #
 # These are the files unique to the current project
 #
-SRCOBJS = miscasm.o demo.o vectors.o storage.o
+SRCOBJS = miscasm.o main.o screen.o vectors.o storage.o
 
 #
 # Objects built by the 3D library code
