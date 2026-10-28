@@ -172,7 +172,7 @@ TRANSPARENTPIXEL = 0
 ; are responsible for clearing the buffers in some other way eg. with the
 ; ClearScreenBufferAndZBuffer() or ClearScreenBuffer() functions
 ;
-INITCLEARBUFFER = 1
+INITCLEARBUFFER = 0
 
 ;
 ; Enable the basic particle system. This requires extra GPU memory and so

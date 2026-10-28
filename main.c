@@ -14,7 +14,7 @@
 #include "screen.h" 	// setting up object lists and draw buffers
 
 /****************************************************************
- *  Defines                         *
+ *  Defines                         									 *
  ****************************************************************/
 
 /* 1/100th of the clock speed */
@@ -179,8 +179,15 @@ int
 main()
 {
 	int i, temp;
-	int drawbuf;				/* flag: 0 means first buffer, 1 means second */
-	Bitmap *curwindow;		/* pointer to output bitmap */
+
+	Bitmap *shown_buffer; 	// the buffer associated with the current displayed object list
+	Bitmap *draw_buffer; 	// the buffer into which we should draw, which will be shown next
+	Bitmap *clear_buffer; 	// the buffer we should clear ready for drawing into next frame
+
+	long *shown_olist; 		// the object list which is currently being shown
+	long *draw_olist;  		// the object list which will be shown next
+	long *clear_olist;  		// the object list associated with the buffer to clear
+
 	Transform *camangles; 	/* camera position and rotation */
 	long buts, shotbuts;		/* joystick buttons pushed */
 	long curframe;				/* current frame counter */
@@ -214,16 +221,27 @@ main()
 	jaguar_logo_material_copy.tmap = jaguar_logo_material.tmap;
 #endif
 
-	/* build object lists from the definitions in screen.h */
+	// build object lists from the definitions in screen.h
 	setup_object_lists();
 
-	/* set the initial object list */
-	OLPset(packed_olist2);
+	// assign our tripple buffers -- use these from now on
+	shown_buffer 	= &scrn1;
+	draw_buffer 	= &scrn2;
+	clear_buffer 	= &scrn3;
+
+	shown_olist 	= packed_olist1;
+	draw_olist 		= packed_olist2;
+	clear_olist 	= packed_olist3;
+
+	ClearScreenBuffer(shown_buffer);
+	// TODO: do we need to wait for blitter?
+	ClearScreenAndZBuffer(draw_buffer);
+
+	// set the initial object list
+	OLPset(shown_olist);
 
 	/* wait for video sync (paranoid code) */
 	VIDsync();
-
-	drawbuf = 0;			/* draw on buffer 1, while displaying buffer 2 */
 
 	objects = (void *)((long)malloc(OBJCOUNT * sizeof(N3DObject) + 3) & 0xFFFFFFFC);
 
@@ -294,23 +312,19 @@ main()
 
 	/* loop forever */
 	for(;;) {
-		/* select bitmap for drawing */
-		curwindow = (drawbuf) ? &scrn2 : &scrn1;
 
-	//
-	// uncomment these lines if you set INITCLEARBUFFER = 0 in renderer.s
-	//
-// #ifdef INDEXEDMODE
-// 		ClearScreenBuffer(curwindow);
-// #else
-// 		ClearScreenAndZBuffer(curwindow);
-// #endif
+		/* wait for vblank */
+		VIDsync();
+
+		/* calculate frames per second, etc. */
+		framespersecond = 300/(_timestamp - curframe);
+		curframe = _timestamp;
 
 		/* setup the shared rendering state for this frame:
 			 - calculates the camera matrix
 			 - clears the image- and z-buffer
 		*/
-		SetupFrame(curwindow, camangles);
+		SetupFrame(draw_buffer, camangles);
 
 		/* now draw the objects, timing how long it takes */
 		/* NOTE: the clock() function uses unsupported hardware
@@ -356,11 +370,11 @@ main()
 		/* debug status display */
 		/* frames per second */
 		sprintf(buf, "%d fps", (int)framespersecond);
-		FNTstr(20, 0, buf, curwindow->data, curwindow->blitflags, usefnt, 0x27ff, 0 );
+		FNTstr(20, 0, buf, draw_buffer->data, draw_buffer->blitflags, usefnt, 0x27ff, 0 );
 
 		/* use this one for whatever you like */
 		sprintf(buf, "L/R: rotate, U/D: forward/back, 4/6: left/right");
-		FNTstr(20, 12, buf, curwindow->data, curwindow->blitflags, usefnt, 0xf0ff, 0 );
+		FNTstr(20, 12, buf, draw_buffer->data, draw_buffer->blitflags, usefnt, 0xf0ff, 0 );
 #endif
 
 		/* buts will contain all buttons currently pressed */
@@ -433,19 +447,26 @@ main()
 			explosion_3d_sprite.materials = explosion_material[0];
 		}
 
+		// display the object list containing the buffer we just drew into
+		OLPset(draw_olist);
 
-		/* display the buffer we just drew */
-		OLPset(drawbuf ? packed_olist2 : packed_olist1);
+		// begin clearing the next buffer
+#ifdef INDEXEDMODE
+		ClearScreenBuffer(clear_buffer);
+#else
+		ClearScreenAndZBuffer(clear_buffer);
+#endif
 
-		/* wait for vblank */
-		VIDsync();
+		// now swap all the buffers and list pointers around
+		Bitmap *temp_buffer = shown_buffer;
+		shown_buffer = draw_buffer;
+		draw_buffer = clear_buffer;
+		clear_buffer = temp_buffer;
 
-		/* calculate frames per second, etc. */
-		framespersecond = 300/(_timestamp - curframe);
-		curframe = _timestamp;
-
-		/* switch drawing buffers */
-		drawbuf = !drawbuf;
+		long *temp_olist = shown_olist;
+		shown_olist = draw_olist;
+		draw_olist = clear_olist;
+		clear_olist = temp_olist;
 	}
 
 	return 0;

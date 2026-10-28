@@ -4,6 +4,18 @@
 
     .include    'jaguar.inc'
 
+    .bss
+
+; the screen buffers -- 3 image buffers and a Z buffer
+    .phrase
+_DISPBUF0::
+    .ds.w   4
+_DISPBUF1::
+    .ds.w   4
+_DISPBUF2::
+    .ds.w   4*320*200
+
+
 SIZEOF_3DSPRITE = 100
 
 ;

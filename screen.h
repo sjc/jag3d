@@ -18,7 +18,7 @@
 void setup_object_lists(void);
 
 /****************************************************************
- *  Defines                         *
+ *  Defines                                                     *
  ****************************************************************/
 
 /* camera width and height */
@@ -36,13 +36,17 @@ void setup_object_lists(void);
 //
 // #define INDEXEDMODE
 
+// TODO: Triple-buffering breaks something with indexed mode. Plus we really don't
+//  need to allocate a Z buffer. Fix this. Make the config global.
+
 #ifdef INDEXEDMODE
 // setup for indexed pixels
 #define PIXELFLAG PIXEL8    // blitter flag corresponding to pixel depth
 #define PIXELSPERPHRASE 8  // how many pixels per 8-byte phrase
 #define DEPTH 3                 // 4 == 16-bit, 3 == 8-bit
-#define S1ZOFFS ZOFFS0      // offset from screen 1 to z buffer
-#define S2ZOFFS ZOFFS0      // offset from screen 1 to z buffer
+#define S1ZOFFS ZOFFS0      // offset from screen 1 to the (non-existant) z buffer
+#define S2ZOFFS ZOFFS0      // offset from screen 2 to the (non-existant) z buffer
+#define S3ZOFFS ZOFFS0      // offset from screen 3 to the (non-existant) z buffer
 #define CLEAR_COLOR 0       // colour index to clear to
 
 #else
@@ -50,76 +54,81 @@ void setup_object_lists(void);
 #define PIXELFLAG PIXEL16   // blitter flag corresponding to pixel depth
 #define PIXELSPERPHRASE 4  // how many pixels per 8-byte phrase
 #define DEPTH 4                 // 4 == 16-bit, 3 == 8-bit
-#define S1ZOFFS ZOFFS2      // offset from screen 1 to z buffer
-#define S2ZOFFS ZOFFS1      // offset from screen 1 to z buffer
+#define S1ZOFFS ZOFFS3      // offset from screen 1 to the z buffer
+#define S2ZOFFS ZOFFS2      // offset from screen 2 to the z buffer
+#define S3ZOFFS ZOFFS1      // offset from screen 3 to the z buffer
 #define CLEAR_COLOR 0x27a027a0
 
 #endif //INDEXEDMODE
 
-/* the 2 screen buffers */
-extern short DISPBUF0[], DISPBUF1[];
+#define SCREENX     (14+(320-OBJWIDTH)/2)
+#define SCREENY     (20+(240-OBJHEIGHT))
+
+//
+// The 3 screen buffers
+//
+extern short DISPBUF0[], DISPBUF1[], DISPBUF2[];
 #define DATA1 ((char *)DISPBUF0)
 #define DATA2 ((char *)DISPBUF1)
+#define DATA3 ((char *)DISPBUF2)
 
 //
 // the number of objects in the object list, not counting the initial STOP objects
 //
 #define OLIST_LEN 2
 
-/* length in bytes of a screen line (2 data buffers+1 Z buffer ->
-   3*2 = 6 bytes/pixel */
-#define LINELEN (OBJWIDTH*6L)
+#define OLIST(LABEL,X,Y,DATA) union olist LABEL[OLIST_LEN] = { \
+    {{OL_BITMAP, X, Y, \
+        0L, DATA, OBJHEIGHT, OBJWIDTH*4/PIXELSPERPHRASE, OBJWIDTH/PIXELSPERPHRASE, \
+        DEPTH, 4, 0, 0, 0, \
+        0,0,0}}, \
+    {{OL_STOP}}, \
+}; \
 
-/* object list for first screen */
-union olist buf1_olist[OLIST_LEN] =
-{
-    {{OL_BITMAP,    /* type */
-     14+(320-OBJWIDTH)/2, 20+(240-OBJHEIGHT),       /* x, y */
-     0L,        /* link */
-     DATA1,     /* data */
-     OBJHEIGHT, OBJWIDTH*3/PIXELSPERPHRASE, OBJWIDTH/PIXELSPERPHRASE,       /* height, dwidth, iwidth */
-     DEPTH, 3, 0, 0, 0, /* depth, pitch, index, flags, firstpix */
-     0,0,0}},       /* scaling stuff */
+//
+// Object list definitions for the three screens
+// These will be 'compiled' to packed object lists by setup_object_lists()
+//
+OLIST(buf1_olist, SCREENX,SCREENY, DATA1)
+OLIST(buf2_olist, SCREENX,SCREENY, DATA2)
+OLIST(buf3_olist, SCREENX,SCREENY, DATA3)
 
-    {{OL_STOP}}
-};
-
-/* object list for second screen */
-union olist buf2_olist[OLIST_LEN] =
-{
-    {{OL_BITMAP,    /* type */
-     14+(320-OBJWIDTH)/2, 20+(240-OBJHEIGHT),       /* x, y */
-     0L,        /* link */
-     DATA2,     /* data */
-     OBJHEIGHT, OBJWIDTH*3/PIXELSPERPHRASE, OBJWIDTH/PIXELSPERPHRASE,       /* height, dwidth, iwidth */
-     DEPTH, 3, 0, 0, 0, /* depth, pitch, index, flags, firstpix */
-     0,0,0}},       /* scaling stuff */
-
-    {{OL_STOP}}
-};
-
-/* Bitmaps for the two screens */
+//
+// Bitmaps for the three screens
+// Note that each has a different SxZOFFS value (defined above) because each
+//  has a different offset from the Z buffer
+//
 Bitmap scrn1 = {
     CAMHEIGHT, CAMWIDTH,
-    PIXELFLAG|PITCH3|S1ZOFFS|WIDFLAG,
-    (void *)(DATA1 + ((OBJWIDTH-CAMWIDTH)*3L) + (((OBJHEIGHT-CAMHEIGHT)/2)*LINELEN) ),
+    PIXELFLAG|PITCH4|S1ZOFFS|WIDFLAG,
+    (void *)DATA1,
     CLEAR_COLOR
 };
 
-/* initial data for camera corresponding to second screen buffer */
 Bitmap scrn2 = {
     CAMHEIGHT, CAMWIDTH,
-    PIXELFLAG|PITCH3|S2ZOFFS|WIDFLAG,
-    (void *)(DATA2 + ((OBJWIDTH-CAMWIDTH)*3L) + (((OBJHEIGHT-CAMHEIGHT)/2)*LINELEN) ),
+    PIXELFLAG|PITCH4|S2ZOFFS|WIDFLAG,
+    (void *)DATA2,
     CLEAR_COLOR
 };
 
-/* storage for packed object lists */
-long packed_olist1[160];
-long packed_olist2[160];
+Bitmap scrn3 = {
+    CAMHEIGHT, CAMWIDTH,
+    PIXELFLAG|PITCH4|S3ZOFFS|WIDFLAG,
+    (void *)DATA3,
+    CLEAR_COLOR
+};
+
+//
+// Storage for the packed object lists
+//
+long packed_olist1[16];
+long packed_olist2[16];
+long packed_olist3[16];
+
 
 /****************************************************************
- *  External functions                  *
+ *  External functions                                          *
  ****************************************************************/
 
 extern void VIDsync(void);          /* waits for a vertical blank interrupt */

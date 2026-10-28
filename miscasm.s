@@ -3,18 +3,7 @@
 ; 
 	.include	'jaguar.inc'
 
-	.globl	_DISPBUF0
-	.globl	_DISPBUF1
-	.globl	DISPBUF0
-	.globl	DISPBUF1
-
 	.bss
-DISPBUF0:
-_DISPBUF0:
-	.ds.w	4
-DISPBUF1:
-_DISPBUF1:
-	.ds.w	3*320*240
 
 	.phrase
 _jaguar_logo_material_copy:: 	ds.l 	2
