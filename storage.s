@@ -15,6 +15,27 @@ _DISPBUF1::
 _DISPBUF2::
     .ds.w   4*320*200
 
+; variables used by engine.c
+    .long
+_camtrans::     .ds.w   6   ; sizeof(Transform)
+
+; variables used by counters.c
+_tock_size::        .ds.w   1
+_tock_size_x2::     .ds.w   1
+_one_second::       .ds.w   1
+_move_step::        .ds.w   1
+_move_steps::       .ds.l   1
+_rotation_step::    .ds.w   1
+_is_tock_frame::    .ds.w   1
+
+_tock_multiples::   .ds.w   32 
+
+; variables used by tweens.c
+TWEENSMAX = 40
+TWEENSIZE = 24
+_tween_count::      .ds.w    1
+_tween_list::       .ds.l    TWEENSMAX*(TWEENSIZE/4)
+_tween_pointers::   .ds.l    TWEENSMAX
 
 SIZEOF_3DSPRITE = 100
 
@@ -22,7 +43,6 @@ SIZEOF_3DSPRITE = 100
 ; Storage for the Jaguar logo 3D sprite, which we create with Init3DSprite()
 ;
 
-    .bss
     .phrase
 _jaguar_logo_3d_sprite::
     .ds.l    (SIZEOF_3DSPRITE/4)
