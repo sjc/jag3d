@@ -49,7 +49,7 @@ $(LIBJAG): $(LIBOBJS)
 #
 # These are the files unique to the current project
 #
-SRCOBJS = miscasm.o main.o screen.o vectors.o engine.o storage.o \
+SRCOBJS = miscasm.o main.o screen.o vectors.o engine.o counters.o storage.o \
 	models.o scenes/demo.o
 
 #

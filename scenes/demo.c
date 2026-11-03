@@ -1,5 +1,6 @@
 #include "demo.h"
 #include "../engine.h"
+#include "../counters.h"
 #include "../models.h"
 
 #include "../jag3d/jag3d.h"
@@ -21,52 +22,49 @@ short explosion_frame, explosion_frame_count;
 /* each roation step is 1/1024 PI, meaning 2048 steps in a complete rotation */
 #define ROTINC 0x10
 
-extern short vectors_100[];
-
-    // process_input_cb = 0;
 void demo_process_input(unsigned long down, unsigned long pressed) {
 
     // left/right rotates the camera around the y axis
     if (down & JOY_LEFT) {
-        camtrans->beta = SubRotation(camtrans->beta, 8);
+        camtrans->beta = SubRotation(camtrans->beta, rotation_step);
     } else if (down & JOY_RIGHT) {
-        camtrans->beta = AddRotation(camtrans->beta, 8);
+        camtrans->beta = AddRotation(camtrans->beta, rotation_step);
     }
 
     // up/down moves forward and back
     if (down & JOY_UP) {
         short index = camtrans->beta << 1;
-        camtrans->xpos += vectors_100[index];
-        camtrans->zpos += vectors_100[index+1];
+        camtrans->xpos += move_steps[index];
+        camtrans->zpos += move_steps[index+1];
     } else if (down & JOY_DOWN) {
         short index = camtrans->beta << 1;
-        camtrans->xpos -= vectors_100[index];
-        camtrans->zpos -= vectors_100[index+1];
+        camtrans->xpos -= move_steps[index];
+        camtrans->zpos -= move_steps[index+1];
     }
 
     // 4/6 LT/RT sidesteps
     if (down & KEY_4) {
         short index = SubRotation(camtrans->beta, ROT90DEG) << 1;
-        camtrans->xpos += vectors_100[index];
-        camtrans->zpos += vectors_100[index+1];
+        camtrans->xpos += move_steps[index];
+        camtrans->zpos += move_steps[index+1];
     } else if (down & KEY_6) {
         short index = AddRotation(camtrans->beta, ROT90DEG) << 1;
-        camtrans->xpos += vectors_100[index];
-        camtrans->zpos += vectors_100[index+1];
+        camtrans->xpos += move_steps[index];
+        camtrans->zpos += move_steps[index+1];
     }
 
     // 1/7 move the camera up/down
     if (down & KEY_1) {
-        camtrans->ypos -= 100;
+        camtrans->ypos -= move_step;
     } else if (down & KEY_7) {
-        camtrans->ypos += 100;
+        camtrans->ypos += move_step;
     }
 
     // 3/9 angle the camera up/down
     if (down & KEY_3) {
-        camtrans->alpha = SubRotation(camtrans->alpha, 8);
+        camtrans->alpha = SubRotation(camtrans->alpha, rotation_step);
     } else if (down & KEY_9) {
-        camtrans->alpha = AddRotation(camtrans->alpha, 8);
+        camtrans->alpha = AddRotation(camtrans->alpha, rotation_step);
     }
 
     if (down & KEY_5) {

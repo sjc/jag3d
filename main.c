@@ -15,6 +15,7 @@
 
 #include "engine.h"
 #include "scenes/demo.h"
+#include "counters.h"
 
 #include "models.h" // TEMP
 
@@ -106,6 +107,9 @@ main()
 
 	// reset value used by the 'engine'
 	setup_engine();
+
+	// setup counters and values used to sync between NTSC and PAL
+	setup_counters();
 
 	// one time setup of materials for the logo on the 3D sprite
 	setup_models();
