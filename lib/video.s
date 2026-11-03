@@ -195,6 +195,7 @@ InitVBint:
 		move.l	d0,-(sp)
 
 		move.l	#0,__timestamp
+		move.l	#0,_vb_ticks
 		move.l	#VBI,LEVEL0		; Install our Auto-Vector 0 handler
 
 		move.w	_VID_vde,d0		; Must be ODD
@@ -234,6 +235,8 @@ VBI::
 	moveq.l	#0,d0
 	move.w	_VIDtick,d0
 	add.l	d0,__timestamp
+
+	addq.l 	#1,_vb_ticks  	; added to track how many VBIs we've missed
 
 	bsr	copy_olist
 
@@ -287,6 +290,8 @@ _VIDsync::
 _GPUdone::	.ds.w	1	; flag for GPU finished
 _VIDpal::	.ds.w	1	; flag: 0 = NTSC, 1 = PAL
 _VIDtick::	.ds.w	1	; ticks (i.e. 300ths of a second) per frame 
+
+_vb_ticks::	.ds.l 	1  	; count of VBIs seen
 
 _VID_hdb::	.ds.w	1	; Horizontal display begin
 _VID_hde::	.ds.w	1	; Horizontal display end

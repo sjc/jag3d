@@ -73,6 +73,8 @@ main()
 	long *draw_olist;  		// the object list which will be shown next
 	long *clear_olist;  		// the object list associated with the buffer to clear
 
+	short delta, updated; 	// for the movement and rendering code
+
 	long buts, shotbuts;		// joypad input
 
 	long curframe;				/* current frame counter */
@@ -138,21 +140,59 @@ main()
 	// setup the default scene
 	setup_demo_scene();
 
-	/* loop forever */
-	for(;;) {
+	curvbtick = vb_ticks;
 
-		/* wait for vblank */
-		VIDsync();
+	/* loop forever */
+	while(1) {
+
+		/* wait for the next vblank, if we haven't already missed it */
+		if (curvbtick == vb_ticks) VIDsync();
 
 		/* calculate frames per second, etc. */
 		framespersecond = 300/(_timestamp - curframe);
 		curframe = _timestamp;
 
-		/* setup the shared rendering state for this frame:
-			 - calculates the camera matrix
-			 - clears the image- and z-buffer (if INITCLEARBUFFER is set)
-		*/
-		SetupFrame(draw_buffer, camtrans);
+		/* buts will contain all buttons currently pressed */
+		/* shotbuts will contain the ones that are pressed now, but weren't
+		   pressed last time JOYget() was called
+		 */
+		buts = JOYget(JOY1);
+		shotbuts = JOYedge(JOY1);
+
+		// TODO: reset handling
+
+		if (process_input_cb) process_input_cb(buts, shotbuts);
+
+		/* calculate how many frames we have to process */
+		delta = (short)(vb_ticks - curvbtick);
+		updated = 0;
+
+		while (delta--) {
+
+			// increase the frame counter
+			curvbtick++;
+
+			if (curvbtick & 1) {
+				//
+				// Run the game logic for every odd frame, at 30fps (25fps PAL)
+				// The general idea is that we assume it will take over one frame to
+				//  render each screen. If it has taken more than 2 frames, we run
+				//	 the game logic without re-rendering to allow it to catch up.
+				//
+				tick_counter();
+
+				if (process_frame_cb) process_frame_cb();
+
+				updated = 1; // we have something to render
+			}
+		}
+
+		if (updated) {
+			/* setup the shared rendering state for this frame:
+				 - calculates the camera matrix
+			 	- clears the image- and z-buffer (if INITCLEARBUFFER is set)
+			*/
+			SetupFrame(draw_buffer, camtrans);
 
 		/* now draw the objects, timing how long it takes */
 		/* NOTE: the clock() function uses unsupported hardware
@@ -163,18 +203,7 @@ main()
 		 */
 		// time = clock();
 
-		/* buts will contain all buttons currently pressed */
-		/* shotbuts will contain the ones that are pressed now, but weren't
-		   pressed last time JOYget() was called
-		 */
-		buts = JOYget(JOY1);
-		shotbuts = JOYedge(JOY1);
-
-		if (process_input_cb) process_input_cb(buts, shotbuts);
-
-		if (process_frame_cb) process_frame_cb();
-
-		if (render_frame_cb) render_frame_cb();
+			if (render_frame_cb) render_frame_cb();
 
 		// time = clock() - time;
 
@@ -189,22 +218,23 @@ main()
 		FNTstr(20, 12, buf, draw_buffer->data, draw_buffer->blitflags, usefnt, 0xf0ff, 0 );
 #endif
 
-		// display the object list containing the buffer we just drew into
-		OLPset(draw_olist);
+			// display the object list containing the buffer we just drew into
+			OLPset(draw_olist);
 
-		// begin clearing the next buffer
-		if (clear_buffer_cb) clear_buffer_cb(clear_buffer);
+			// begin clearing the next buffer
+			if (clear_buffer_cb) clear_buffer_cb(clear_buffer);
 
-		// now swap all the buffers and list pointers around
-		Bitmap *temp_buffer = shown_buffer;
-		shown_buffer = draw_buffer;
-		draw_buffer = clear_buffer;
-		clear_buffer = temp_buffer;
+			// now swap all the buffers and list pointers around
+			Bitmap *temp_buffer = shown_buffer;
+			shown_buffer = draw_buffer;
+			draw_buffer = clear_buffer;
+			clear_buffer = temp_buffer;
 
-		long *temp_olist = shown_olist;
-		shown_olist = draw_olist;
-		draw_olist = clear_olist;
-		clear_olist = temp_olist;
+			long *temp_olist = shown_olist;
+			shown_olist = draw_olist;
+			draw_olist = clear_olist;
+			clear_olist = temp_olist;
+		}
 	}
 
 	return 0;
