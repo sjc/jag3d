@@ -109,7 +109,8 @@ BufferCallback clear_buffer_cb;
 
 //
 // restart from the menu screen
+// you need to implement this somewhere
 //
-void reset_state(void);
+extern void reset_state(void);
 
 #endif // ENGINE_H

@@ -54,8 +54,14 @@ extern long _timestamp;
 extern FNThead usefnt[];
 
 
-
-
+//
+// Reset the game to a known state (eg. the title screen, if you've got that far)
+//	 in response to the user pressing * and #
+//
+void reset_state() {
+	// init the main demo scene
+	setup_demo_scene();
+}
 
 /****************************************************************
  *	main()																		 *
@@ -138,7 +144,7 @@ main()
 	LoadAndInitRenderer();
 
 	// setup the default scene
-	setup_demo_scene();
+	reset_state();
 
 	curvbtick = vb_ticks;
 
@@ -159,7 +165,12 @@ main()
 		buts = JOYget(JOY1);
 		shotbuts = JOYedge(JOY1);
 
-		// TODO: reset handling
+		// check for * and # pressed to trigger a reset
+		// specifically, check that both are down and at least one of them has just
+		//	 transitioned to down, to avoid triggering on repeats
+		if ((buts & KEY_S) && (buts & KEY_H) && ((shotbuts & KEY_S) || (shotbuts & KEY_H))) {
+			reset_state();
+		}
 
 		if (process_input_cb) process_input_cb(buts, shotbuts);
 
@@ -169,7 +180,7 @@ main()
 
 		while (delta--) {
 
-			// increase the frame counter
+			// increase the frame counter towards vb_ticks
 			curvbtick++;
 
 			if (curvbtick & 1) {
