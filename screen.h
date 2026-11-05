@@ -26,8 +26,8 @@ void setup_object_lists(void);
 #define CAMHEIGHT 200
 
 /* the width and height of the screen object */
-#define OBJWIDTH 320
-#define OBJHEIGHT 200
+#define OBJWIDTH (CAMWIDTH)
+#define OBJHEIGHT (CAMHEIGHT)
 #define WIDFLAG WID320      // blitter flag corresponding to OBJWIDTH
 
 //

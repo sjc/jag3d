@@ -35,7 +35,8 @@ start::
 
 	suba.l	a6,a6				; initialize frame pointer for debugger
 
-	move.w	#$6C1,-(sp)			; assume 16 bit CRY mode
+	move.w	#(PWIDTH4|BGEN|CSYNC|VIDEN),-(sp)			; assume 16 bit CRY mode @ 320 pixels wide
+	;move.w	#(PWIDTH3|BGEN|CSYNC|VIDEN),-(sp)			; assume 16 bit CRY mode @ 384 pixels wide
 	jsr	_VIDinit			; initialize the video
 	addq.w	#2,sp
 
