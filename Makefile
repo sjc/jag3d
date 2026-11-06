@@ -36,7 +36,7 @@ ARFLAGS = crs
 #############################################################################
 CRT0= $(LIB)/jagrt.o
 
-LIBOBJS = $(LIB)/alloc.o $(LIB)/clock.o $(LIB)/ctype.o $(LIB)/font.o \
+LIBOBJS = $(LIB)/alloc.o $(LIB)/ctype.o $(LIB)/font.o \
 	$(LIB)/joyinp.o $(LIB)/joypad.o $(LIB)/memset.o \
 	$(LIB)/olist.o $(LIB)/sprintf.o $(LIB)/strcat.o $(LIB)/strcmp.o \
 	$(LIB)/strcpy.o $(LIB)/strdup.o $(LIB)/strncmp.o $(LIB)/util.o \
@@ -49,7 +49,7 @@ $(LIBJAG): $(LIBOBJS)
 #
 # These are the files unique to the current project
 #
-SRCOBJS = miscasm.o main.o screen.o vectors.o engine.o counters.o storage.o \
+SRCOBJS = miscasm.o main.o screen.o vectors.o engine.o counters.o timer.o storage.o \
 	models.o scenes/demo.o
 
 #

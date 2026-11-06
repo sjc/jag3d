@@ -6,6 +6,7 @@
 
 #include "font.h"
 #include "joypad.h"
+#include "timer.h"
 #include "string.h"
 #include "stdlib.h"
 
@@ -20,25 +21,10 @@
 #include "models.h" // TEMP
 
 /****************************************************************
- *  Defines                         									 *
- ****************************************************************/
-
-/* 1/100th of the clock speed */
-// #define MHZ 265900L
-
-
-
-/****************************************************************
  *	External functions					*
  ****************************************************************/
 
 extern int sprintf(char *, const char *, ...);	/* you know what this does */
-
-/* NOTE: clock() is useful only for debugging; it works on
- * current developer consoles, but may fail on production
- * units and/or future Jaguar consoles!
- */
-// extern unsigned long clock(void);		/* timer function using the PIT */
 
 /****************************************************************
  *	External variables					*
@@ -85,11 +71,11 @@ main()
 
 	long curframe;				/* current frame counter */
 	long framespersecond;	/* frames per second counter */
-	// long time;					/* elapsed time */
-	
+	short logic_time, render_time, idle_time;
+
 	char buf[256];				/* scratch buffer for sprintf */
 
-
+	setup_timer();
 
 	// build object lists from the definitions in screen.h
 	setup_object_lists();
@@ -140,6 +126,13 @@ main()
 		/* wait for the next vblank, if we haven't already missed it */
 		if (curvbtick == vb_ticks) VIDsync();
 
+		// 60hz = 16.66ms per frame
+		// 50hz = 20ms per frame
+
+		idle_time = read_timer();
+		idle_time = idle_time - (render_time <= idle_time ? render_time : logic_time);
+		reset_timer();
+
 		/* calculate frames per second, etc. */
 		framespersecond = 300/(_timestamp - curframe);
 		curframe = _timestamp;
@@ -184,6 +177,8 @@ main()
 			}
 		}
 
+		logic_time = read_timer();
+
 		if (updated) {
 			/* setup the shared rendering state for this frame:
 				 - calculates the camera matrix
@@ -207,7 +202,7 @@ main()
 #ifndef INDEXEDMODE
 		/* debug status display */
 		/* frames per second */
-		sprintf(buf, "%d fps", (int)framespersecond);
+		sprintf(buf, "%d fps (%d, %d, %d)", (int)framespersecond, (int)logic_time, (int)render_time, (int)idle_time);
 		FNTstr(20, 0, buf, draw_buffer->data, draw_buffer->blitflags, usefnt, 0x27ff, 0 );
 
 		/* use this one for whatever you like */
@@ -231,6 +226,8 @@ main()
 			shown_olist = draw_olist;
 			draw_olist = clear_olist;
 			clear_olist = temp_olist;
+
+			render_time = read_timer() - logic_time;
 		}
 	}
 
