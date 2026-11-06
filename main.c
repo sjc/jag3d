@@ -122,20 +122,6 @@ main()
 	// one time setup of materials for the logo on the 3D sprite
 	setup_models();
 
-
-	//camangles = (void *)((long)malloc(sizeof(Transform) + 3) & 0xFFFFFFFC);
-
-	/* set up the viewer's position */
-	// camangles->alpha = camangles->gamma = 0;
-	// camangles->beta = 0;
-	// camangles->xpos = camangles->ypos = camangles->zpos = 0;
-
-
-	// This is only required for the "Gouraud Shaded Textures" rendered (TEXSHADE = 2)
-	// for (i = 0; i < EXPLOSION_COUNT; i++) {
-	// 	FixTexture(explosion_material[i]->tmap);
-	// }
-
 	/* initialize timing information */
 	curframe = _timestamp;			/* timestamp is updated every vblank, and is elapsed time in 300ths of a second */
 	framespersecond = 1;

@@ -11,12 +11,13 @@
 
 #define OBJCOUNT 4
 
-N3DObject *objects;         /* objects which will be drawn each frame */
-Transform *jaguar_logo_trans;
-Transform *explosion_trans;
+extern N3DObject objects[];     // objects which will be drawn each frame, allocated in storage.s
+extern Transform jaguar_logo_trans[];
+extern Transform explosion_trans[];
+
 short explosion_frame, explosion_frame_count;
 
-
+extern short vectors_100[];
 
 
 /* each roation step is 1/1024 PI, meaning 2048 steps in a complete rotation */
@@ -73,15 +74,15 @@ void demo_process_input(unsigned long down, unsigned long pressed) {
     }
 
     // button A triggers an explosion
-    // if (pressed & FIRE_A && explosion_frame == -1) {
-    //     // position the explosion in front of the camera at a distance
-    //     short index = camtrans->beta * 2;
-    //     explosion_trans->xpos = camtrans->xpos + (vectors_100[index] << 2);
-    //     explosion_trans->zpos = camtrans->zpos + (vectors_100[index+1] << 2);
-    //     explosion_frame = 0;
-    //     explosion_frame_count = 0;
-    //     explosion_3d_sprite.materials = explosion_material[0];
-    // }
+    if ((down & FIRE_A) && explosion_frame == -1) {
+        // position the explosion in front of the camera at a distance
+        short index = camtrans->beta * 2;
+        explosion_trans->xpos = camtrans->xpos + (vectors_100[index] << 2);
+        explosion_trans->zpos = camtrans->zpos + (vectors_100[index+1] << 2);
+        explosion_frame = 0;
+        explosion_frame_count = 0;
+        explosion_3d_sprite.materials = explosion_material[0];
+    }
 }
 
     // process_moved_cb = 0;
@@ -122,9 +123,6 @@ void demo_render_frame() {
 }
     
 
-
-
-
 void demo_clear_buffer(Bitmap *buffer) {
     // TODO: this needs to have access to INDEXEDMODE eg. from a shared config
 #ifdef INDEXEDMODE
@@ -155,9 +153,6 @@ void setup_demo_scene() {
     camtrans->beta = 0;
     camtrans->gamma = 0;
 
-    // TODO: replace this with a static array
-    objects = (void *)((long)malloc(OBJCOUNT * sizeof(N3DObject) + 3) & 0xFFFFFFFC);
-
     /* initialize the test objects */
     for (i = 0; i < OBJCOUNT; i++) {
         memset(&objects[i], 0, sizeof(N3DObject));
@@ -172,7 +167,6 @@ void setup_demo_scene() {
 
     /* setup the logo 3d sprite */
     Init3DSprite(&jaguar_logo_3d_sprite, &jaguar_logo_material_copy, JAGUAR_LOGO_WIDTH, JAGUAR_LOGO_HEIGHT);
-    jaguar_logo_trans = (void *)((long)malloc(sizeof(Transform) + 3) & 0xFFFFFFFC);
     jaguar_logo_trans->xpos = 0;
     jaguar_logo_trans->ypos = 0;
     jaguar_logo_trans->zpos = 2000;
@@ -185,11 +179,9 @@ void setup_demo_scene() {
 
     /* setup the explosion 3D sprite -- not shown yet */
     Init3DSprite(&explosion_3d_sprite, &explosion_0_material, EXPLOSION_WIDTH, EXPLOSION_HEIGHT);
-    explosion_trans = (void *)((long)malloc(sizeof(Transform) + 3) & 0xFFFFFFFC);
     explosion_trans->ypos = 0;
     explosion_trans->alpha = 0;
     explosion_trans->gamma = 0;
     explosion_frame = -1;
     explosion_frame_count = 0;
-
 }

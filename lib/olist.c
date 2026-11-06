@@ -1,4 +1,4 @@
-#include <stdlib.h>	/* for malloc() */
+#include <stdlib.h>	/* for alloca() */
 #include "olist.h"
 
 #define HILINK(l) (((l) & 0x07ff00L) >> 8L)

@@ -37,6 +37,17 @@ _tween_count::      .ds.w    1
 _tween_list::       .ds.l    TWEENSMAX*(TWEENSIZE/4)
 _tween_pointers::   .ds.l    TWEENSMAX
 
+
+SIZEOF_N3DOBJECT = 28
+OBJCOUNT = 4
+    .long
+_objects::  .ds.l   ((SIZEOF_N3DOBJECT/4)*OBJCOUNT)
+
+SIZEOF_TRANSFORM = 12
+    .long
+_jaguar_logo_trans::    .ds.l   (SIZEOF_TRANSFORM/4)
+_explosion_trans::      .ds.l   (SIZEOF_TRANSFORM/4)
+
 SIZEOF_3DSPRITE = 100
 
 ;

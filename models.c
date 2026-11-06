@@ -49,6 +49,8 @@ void setup_models() {
         }
     }
 
-    /* ...and allocate temporary storage for the GPU to transform points */
+    /* ...and allocate temporary storage for the GPU to transform points.
+       Note that the malloc() is left here to demonstrate aligning the result. In
+       practice you should probably use a pre-allocated array of predetermined size */
     tpoints = (void *)((long)malloc(temp * sizeof(TPoint) + 3) & 0xFFFFFFFC);
 }
