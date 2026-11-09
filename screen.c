@@ -8,3 +8,9 @@ void setup_object_lists() {
     OLbldto(buf2_olist, packed_olist2, OLIST_LEN);
     OLbldto(buf3_olist, packed_olist3, OLIST_LEN);
 }
+
+void clear_hud_buffer() {
+    short *ptr = HUDBUFFER;
+    short count = (HUDWIDTH/4)*HUDHEIGHT;
+    while (count--) *ptr++ = 0;
+}

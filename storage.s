@@ -13,7 +13,11 @@ _DISPBUF0::
 _DISPBUF1::
     .ds.w   4
 _DISPBUF2::
-    .ds.w   4*320*200
+    .ds.w   4*320*200 ; TODO: import a shared config and use CAMWIDTH and CAMHEIGHT
+
+; the overlay buffer
+    .phrase
+_HUDBUFFER::    .ds.w   (320/4)*24 ; TODO: based off same CAMWIDTH
 
 ; variables used by engine.c
     .long
@@ -136,3 +140,11 @@ _explosion_3_material::
     .dc.w   64, 64
     .dc.l   PITCH1|PIXEL16|WID64
     .dc.l   _explosion_3
+
+    .data
+    .even
+_font_ac::
+    .incbin 'font-ac.raw'
+
+
+

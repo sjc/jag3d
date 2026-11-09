@@ -4,11 +4,11 @@
  * All Rights Reserved.
  */
 
-#include "font.h"
 #include "joypad.h"
 #include "timer.h"
 #include "string.h"
 #include "stdlib.h"
+#include "text.h"
 
 #include "jag3d/jag3d.h"
 
@@ -33,12 +33,7 @@ extern int sprintf(char *, const char *, ...);	/* you know what this does */
 /* library count of number of 300ths of a second elapsed */
 extern long _timestamp;
 
-/* timing information */
-// extern long proftime[];
-
-/* the font we'll use for printing stuff on screen */
-extern FNThead usefnt[];
-
+extern short font_ac[]; // font used for framerate
 
 //
 // Reset the game to a known state (eg. the title screen, if you've got that far)
@@ -96,6 +91,12 @@ main()
 	// set the initial object list
 	OLPset(shown_olist);
 
+	// clear the buffer used to overlay text
+	clear_hud_buffer();
+
+	// setup colours used in the HUD overlay
+	*(unsigned short int *)0xf00402 = 0x88ff; /* Color reg 1 = white */
+
 	/* wait for video sync (paranoid code) */
 	VIDsync();
 
@@ -111,6 +112,7 @@ main()
 	/* initialize timing information */
 	curframe = _timestamp;			/* timestamp is updated every vblank, and is elapsed time in 300ths of a second */
 	framespersecond = 1;
+	logic_time = render_time = idle_time = 0;
 
 	/* load the renderer into GPU memory */
 	LoadAndInitRenderer();
@@ -186,29 +188,20 @@ main()
 			*/
 			SetupFrame(draw_buffer, camtrans);
 
-		/* now draw the objects, timing how long it takes */
-		/* NOTE: the clock() function uses unsupported hardware
-		 * mechanisms; it happens to work on current developer
-		 * machines, but will fail on some Jaguars. If this
-		 * were production code, we would have to use a
-		 * different timing mechanism!
-		 */
-		// time = clock();
+			/* now draw the objects, timing how long it takes */
+			/* NOTE: the clock() function uses unsupported hardware
+			 * mechanisms; it happens to work on current developer
+		 	 * machines, but will fail on some Jaguars. If this
+			 * were production code, we would have to use a
+			 * different timing mechanism!
+			 */
 
 			if (render_frame_cb) render_frame_cb();
 
-		// time = clock() - time;
-
-#ifndef INDEXEDMODE
-		/* debug status display */
-		/* frames per second */
-		sprintf(buf, "%d fps (%d, %d, %d)", (int)framespersecond, (int)logic_time, (int)render_time, (int)idle_time);
-		FNTstr(20, 0, buf, draw_buffer->data, draw_buffer->blitflags, usefnt, 0x27ff, 0 );
-
-		/* use this one for whatever you like */
-		sprintf(buf, "L/R: rotate, U/D: forward/back, 4/6: left/right");
-		FNTstr(20, 12, buf, draw_buffer->data, draw_buffer->blitflags, usefnt, 0xf0ff, 0 );
-#endif
+			/* debug status display */
+			/* frames per second, duration for logic, render and idle */
+			sprintf(buf, "%d fps (%dms, %dms, %dms)  ", (int)framespersecond, (int)logic_time, (int)render_time, (int)idle_time);
+			draw_string_to_buffer(buf, PEN1, HUDBUFFER, HUDSTRIDE, font_ac);
 
 			// display the object list containing the buffer we just drew into
 			OLPset(draw_olist);

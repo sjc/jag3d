@@ -73,15 +73,33 @@ extern short DISPBUF0[], DISPBUF1[], DISPBUF2[];
 #define DATA3 ((char *)DISPBUF2)
 
 //
+// The shared HUD overlay
+//
+extern short HUDBUFFER[];
+
+#define HUDWIDTH    (CAMWIDTH)
+#define HUDHEIGHT   (24)
+#define HUDDEPTH    (2)     // 4bpp
+
+#define HUDSTRIDE   (CAMWIDTH/2)   // @ 4bpp each pixel occupies half a byte
+
+void clear_hud_buffer(void);
+
+//
 // the number of objects in the object list, not counting the initial STOP objects
 //
-#define OLIST_LEN 2
+#define OLIST_LEN 3
 
 #define OLIST(LABEL,X,Y,DATA) union olist LABEL[OLIST_LEN] = { \
     {{OL_BITMAP, X, Y, \
         0L, DATA, OBJHEIGHT, OBJWIDTH*4/PIXELSPERPHRASE, OBJWIDTH/PIXELSPERPHRASE, \
         DEPTH, 4, 0, 0, 0, \
         0,0,0}}, \
+    {{OL_BITMAP, X, Y, \
+        0L, HUDBUFFER, HUDHEIGHT, HUDWIDTH/16,HUDWIDTH/16, \
+        HUDDEPTH,1,0,OL_TRANS|OL_RELEASE,0, \
+        0,0,0 \
+    }}, \
     {{OL_STOP}}, \
 }; \
 
@@ -122,9 +140,9 @@ Bitmap scrn3 = {
 //
 // Storage for the packed object lists
 //
-long packed_olist1[16];
-long packed_olist2[16];
-long packed_olist3[16];
+long packed_olist1[24];
+long packed_olist2[24];
+long packed_olist3[24];
 
 
 /****************************************************************

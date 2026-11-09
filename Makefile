@@ -49,8 +49,8 @@ $(LIBJAG): $(LIBOBJS)
 #
 # These are the files unique to the current project
 #
-SRCOBJS = miscasm.o main.o screen.o vectors.o engine.o counters.o timer.o storage.o \
-	models.o scenes/demo.o
+SRCOBJS = miscasm.o main.o screen.o vectors.o engine.o counters.o timer.o text.o \
+	storage.o models.o scenes/demo.o
 
 #
 # Objects built by the 3D library code
