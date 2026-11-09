@@ -26,6 +26,8 @@ This is a modified version of Atari's 3D demo for the Jaguar. Specifically, it i
 
 The [jaguar-sdk](https://github.com/cubanismo/jaguar-sdk) is the supported method of building this code.
 
+See BUILD.md for the available Makefile options.
+
 ## Running
 
 The 3D demo will not run on [Virtual Jaguar](https://icculus.org/virtualjaguar/). This is a known issue with all version of this code.

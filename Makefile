@@ -85,13 +85,34 @@ $(MODELS): %$(MODELOBJEXT) : $(MODELDIR)/%
 	@echo "Make model $@ from directory $*"
 	$(MAKE) -C $(MODELDIR) OBJ=$@ DIR=$*
 
-PROGS = demo.cof
+PROGS = jag3d.cof
 
 FIXDATA = -ii $(FONTDIR)/clr6x12.jft _usefnt
 
 OBJS = $(CRT0) $(SRCOBJS) $(MODELS) $(LIBJAG) $(JAG3D_OBJS)
 
-demo.cof: $(OBJS)
-	$(LINK) $(LINKFLAGS) -o demo.cof $(OBJS) $(FIXDATA)
+jag3d.cof: $(OBJS)
+	$(LINK) $(LINKFLAGS) -o $@ $(OBJS) $(FIXDATA)
+
+#
+# Build a ROM
+# `make j64`
+# This requires files from BJL. See BUILD.md.
+#
+
+BJL_BIN = ../new_bjl/bin
+
+jag3d.rom: $(OBJS)
+	$(LINK) $(LINKFLAGS) -n -a 802000 x 4000 -o $@ $(OBJS) $(FIXDATA)
+
+jag3d.j64: jag3d.rom
+	@cat $(BJL_BIN)/Univ.bin $< >$@
+	@cat $< >> $@
+	@bzcat $(BJL_BIN)/allff.bin.bz2 >> $@
+	@truncate -s 1M $@
+
+j64: jag3d.j64
+
+GENERATED += jag3d.rom jag3d.j64
 
 include $(JAGSDK)/tools/build/jagrules.mk
