@@ -6,8 +6,9 @@
 #include "../jag3d/jag3d.h"
 #include "../include/joypad.h"
 
-#include "../include/stdlib.h"
 #include "../include/string.h"
+#include "../text.h"
+#include "../screen.h"
 
 #define OBJCOUNT 4
 
@@ -19,6 +20,7 @@ short explosion_frame, explosion_frame_count;
 
 extern short vectors_100[];
 
+extern short font_ac[];
 
 /* each roation step is 1/1024 PI, meaning 2048 steps in a complete rotation */
 #define ROTINC 0x10
@@ -184,4 +186,7 @@ void setup_demo_scene() {
     explosion_trans->gamma = 0;
     explosion_frame = -1;
     explosion_frame_count = 0;
+
+    draw_string_to_buffer("Left/Right: rotate, Up/Down: fwd/back", PEN1, HUDBUFFER+(HUDSTRIDE*4), HUDSTRIDE, font_ac);
+    draw_string_to_buffer("4/6 (LT/RT): step left/right", PEN1, HUDBUFFER+(HUDSTRIDE*8), HUDSTRIDE, font_ac);
 }
