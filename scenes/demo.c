@@ -19,13 +19,52 @@ extern Transform explosion_trans[];
 short explosion_frame, explosion_frame_count;
 
 extern short vectors_100[];
-
 extern short font_ac[];
 
-/* each roation step is 1/1024 PI, meaning 2048 steps in a complete rotation */
-#define ROTINC 0x10
+void write_instructions() {
+    draw_string_to_buffer("Left/Right: rotate, Up/Down: fwd/back", PEN1, HUDBUFFER+(HUDSTRIDE*4), HUDSTRIDE, font_ac);
+    draw_string_to_buffer("4/6 (LT/RT): step left/right", PEN1, HUDBUFFER+(HUDSTRIDE*8), HUDSTRIDE, font_ac);
+}
+
+void write_paused() {
+    draw_string_to_buffer("PAUSED", PEN1, HUDBUFFER, HUDSTRIDE, font_ac);
+}
 
 void demo_process_input(unsigned long down, unsigned long pressed) {
+
+    //
+    // handle pausing
+    //
+    if (pressed & PAUSE) {
+
+        clear_hud_buffer();
+        write_paused();
+
+        //
+        // loop until the player un-pauses
+        // updating the object list is handled from the vblank interrupt,
+        //  so we don't have to worry about that
+        //
+        do {
+            VIDsync();
+
+            // re-read the joypad
+            down = JOYget(JOY1);
+            pressed = JOYedge(JOY1);
+
+            // check for 1 + 3 keys
+            if ((down& KEY_1) && (down & KEY_3) && ((pressed & KEY_1) || (pressed & KEY_3))) {
+                clear_hud_buffer(); // hide the "PAUSED" message
+            }
+
+        } while (!(pressed & PAUSE));
+
+        // keep track of game ticks, so when we unpause we resume where we were
+        curvbtick = vb_ticks - 1;
+
+        // replace the instructions
+        write_instructions();
+    }
 
     // left/right rotates the camera around the y axis
     if (down & JOY_LEFT) {
@@ -187,6 +226,5 @@ void setup_demo_scene() {
     explosion_frame = -1;
     explosion_frame_count = 0;
 
-    draw_string_to_buffer("Left/Right: rotate, Up/Down: fwd/back", PEN1, HUDBUFFER+(HUDSTRIDE*4), HUDSTRIDE, font_ac);
-    draw_string_to_buffer("4/6 (LT/RT): step left/right", PEN1, HUDBUFFER+(HUDSTRIDE*8), HUDSTRIDE, font_ac);
+    write_instructions();
 }
