@@ -1,16 +1,12 @@
 #include "demo.h"
 #include "../engine.h"
-#include "../counters.h"
 #include "../models.h"
 
 #include "../jag3d/jag3d.h"
 #include "../include/joypad.h"
 
 #include "../include/string.h"
-#include "../text.h"
 #include "../screen.h"
-
-#define OBJCOUNT 4
 
 extern N3DObject objects[];     // objects which will be drawn each frame, allocated in storage.s
 extern Transform jaguar_logo_trans[];

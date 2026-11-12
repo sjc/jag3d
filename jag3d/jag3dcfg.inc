@@ -51,12 +51,12 @@
 ;POLYSIDES  =   4
 
 ; "Unshaded Textures"
-;INDEXED     =   0
-;WIREFRAME   =   0
-;PHRASEMODE  =   0
-;TEXTURES    =   1
-;TEXSHADE    =   0
-;POLYSIDES   =   4
+INDEXED     =   0
+WIREFRAME   =   0
+PHRASEMODE  =   0
+TEXTURES    =   1
+TEXSHADE    =   0
+POLYSIDES   =   4
 
 ; "Flat Shaded Textures"
 ;INDEXED    =   0
@@ -84,12 +84,12 @@
 ;POLYSIDES  =   3
 
 ; "Indexed Mode Untextured"
-INDEXED    =   1
-WIREFRAME  =   0
-PHRASEMODE =   0
-TEXTURES   =   0
-TEXSHADE   =   0
-POLYSIDES  =   4
+;INDEXED    =   1
+;WIREFRAME  =   0
+;PHRASEMODE =   0
+;TEXTURES   =   0
+;TEXSHADE   =   0
+;POLYSIDES  =   4
 
 ; "Indexed Mode Textured"
 ;INDEXED    =   1
@@ -183,3 +183,13 @@ PARTICLES = 0
 ;
 ROTSTEPS = 2048
 ROTMASK = (ROTSTEPS-1)
+
+; structs in n3d.h
+SIZEOF_N3DOBJECT = 28
+SIZEOF_TRANSFORM = 12
+
+; == sizeof(N3DObjdata)
+;  + sizeof(Face)
+;  + 4                     the sprite is a rect therefore the Face has an extra point
+;  + 4 * sizeof(Point)
+SIZEOF_3DSPRITE = (20+28+48)  ; == 96

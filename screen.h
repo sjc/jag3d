@@ -3,6 +3,7 @@
 #define SCREEN_H
 
 #include "jag3d/jag3d.h"
+#include "engine.h"
 #include "blit.h"
 
 //
@@ -20,10 +21,6 @@ void setup_object_lists(void);
 /****************************************************************
  *  Defines                                                     *
  ****************************************************************/
-
-/* camera width and height */
-#define CAMWIDTH 320
-#define CAMHEIGHT 200
 
 /* the width and height of the screen object */
 #define OBJWIDTH (CAMWIDTH)
@@ -94,7 +91,7 @@ void clear_hud_buffer(void);
         0L, DATA, OBJHEIGHT, OBJWIDTH*4/PIXELSPERPHRASE, OBJWIDTH/PIXELSPERPHRASE, \
         DEPTH, 4, 0, 0, 0, \
         0,0,0}}, \
-    {{OL_BITMAP, X, Y, \
+    {{OL_BITMAP, X, Y+2, \
         0L, HUDBUFFER, HUDHEIGHT, HUDWIDTH/16,HUDWIDTH/16, \
         HUDDEPTH,1,0,OL_TRANS|OL_RELEASE,0, \
         0,0,0 \

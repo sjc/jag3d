@@ -6,10 +6,10 @@
 #define ENGINE_H
 
 #include "jag3d/jag3d.h"
-// #include "const.h"
-// #include "screen.h"
 
+#include "const.h"
 #include "counters.h"
+#include "text.h"
 #include "tweens.h"
 
 //

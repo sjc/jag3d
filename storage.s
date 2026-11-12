@@ -2,6 +2,8 @@
 ; storage.s
 ;
 
+    .include    'jag3d/jag3dcfg.inc'
+    .include    'const.inc'
     .include    'jaguar.inc'
 
     .bss
@@ -32,27 +34,20 @@ _move_steps::       .ds.l   1
 _rotation_step::    .ds.w   1
 _is_tock_frame::    .ds.w   1
 
-_tock_multiples::   .ds.w   32 
+_tock_multiples::   .ds.w   TOCKMCOUNT
 
 ; variables used by tweens.c
-TWEENSMAX = 40
-TWEENSIZE = 24
 _tween_count::      .ds.w    1
 _tween_list::       .ds.l    TWEENSMAX*(TWEENSIZE/4)
 _tween_pointers::   .ds.l    TWEENSMAX
 
-
-SIZEOF_N3DOBJECT = 28
-OBJCOUNT = 4
     .long
 _objects::  .ds.l   ((SIZEOF_N3DOBJECT/4)*OBJCOUNT)
 
-SIZEOF_TRANSFORM = 12
     .long
 _jaguar_logo_trans::    .ds.l   (SIZEOF_TRANSFORM/4)
 _explosion_trans::      .ds.l   (SIZEOF_TRANSFORM/4)
 
-SIZEOF_3DSPRITE = 100
 
 ;
 ; Storage for the Jaguar logo 3D sprite, which we create with Init3DSprite()
@@ -145,6 +140,3 @@ _explosion_3_material::
     .even
 _font_ac::
     .incbin 'font-ac.raw'
-
-
-

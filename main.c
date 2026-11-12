@@ -8,7 +8,6 @@
 #include "timer.h"
 #include "string.h"
 #include "stdlib.h"
-#include "text.h"
 
 #include "jag3d/jag3d.h"
 
@@ -18,7 +17,7 @@
 #include "scenes/demo.h"
 #include "counters.h"
 
-#include "models.h" // TEMP
+#include "models.h"
 
 /****************************************************************
  *	External functions					*

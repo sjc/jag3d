@@ -3,6 +3,4 @@
 
 void setup_demo_scene(void);
 
-
-
 #endif // DEMO_H

@@ -2,6 +2,9 @@
 // Simple text writing functions
 //
 
+#ifndef TEXT_H
+#define TEXT_H
+
 //
 // Use these constants to change text colour mid-string. They map 
 //  to indexes 1 to 15 of whatever colour palette is selected in 
@@ -55,3 +58,5 @@ extern void draw_string_to_buffer(char *string, short pen, void *buffer, short s
 // stride is the width of the buffer being drawn into
 //
 extern void draw_string_to_buffer_16(char *string, short pen, void *buffer, short stride, void *font);
+
+#endif // TEXT_H

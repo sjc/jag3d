@@ -3,6 +3,7 @@
 //
 
 #include "counters.h"
+#include "engine.h"
 
 //
 // configure counters and shared values for PAL / NTSC
@@ -18,8 +19,6 @@ extern short VIDpal; // 1 == PAL, 0 == NTSC. set in video.s
 
 extern short vectors_100[];
 extern short vectors_120[];
-
-#define TOCKMCOUNT  32  // number of entries in the tock_multiples array
 
 void setup_counters() {
 

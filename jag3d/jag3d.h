@@ -104,12 +104,6 @@ void *CopyModelDeep(N3DObjdata *original, void *buffer, short copy_faces, short 
  * 3D Sprites
  */
 
-// == sizeof(N3DObjdata)
-//  + sizeof(Face)
-//  + 4                     the sprite is a rect therefore the Face has an extra point
-//  + 4 * sizeof(Point)
-#define SIZEOF_3DSPRITE     (20+28+48)  // == 96
-
 void Init3DSprite(N3DObjdata *sprite, Material *texture, short width, short height);
 
 /*

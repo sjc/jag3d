@@ -71,6 +71,12 @@ $(JAG3D)/jag3dcfg.h: $(JAG3D)/jag3dcfg.inc
 	$(shell sed -r -n -f tools/inc2h.sed $< > $@)
 
 #
+# ...and the same with the engine constants file
+#
+const.h: const.inc
+	$(shell sed -r -n -f tools/inc2h.sed $< > $@)
+
+#
 # The model directories are those under $(DIR) which aren't files and aren't
 # 	prefixed with _ (which we'll used to temporarily disable a model)
 #
@@ -95,7 +101,7 @@ FIXDATA = -ii $(FONTDIR)/clr6x12.jft _usefnt
 
 OBJS = $(CRT0) $(SRCOBJS) $(MODELS) $(LIBJAG) $(JAG3D_OBJS)
 
-jag3d.cof: $(JAG3D)/jag3dcfg.h $(OBJS)
+jag3d.cof: $(JAG3D)/jag3dcfg.h const.h $(OBJS)
 	$(LINK) $(LINKFLAGS) -o $@ $(OBJS) $(FIXDATA)
 
 #
@@ -117,6 +123,6 @@ jag3d.j64: jag3d.rom
 
 j64: jag3d.j64
 
-GENERATED += $(JAG3D)/jag3dcfg.h jag3d.rom jag3d.j64
+GENERATED += $(JAG3D)/jag3dcfg.h const.h jag3d.rom jag3d.j64
 
 include $(JAGSDK)/tools/build/jagrules.mk
