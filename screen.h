@@ -31,15 +31,14 @@ void setup_object_lists(void);
 #define WIDFLAG WID320      // blitter flag corresponding to OBJWIDTH
 
 //
-// Un-comment this define to test indexed mode, along with selecting
-// one of the INDEXED = 1 renderers from renderer.s
+// If one of the INDEXED = 1 renderers from renderer.s has been selected
+//  we will setup the buffers for 8bpp
 //
-// #define INDEXEDMODE
 
 // TODO: Triple-buffering breaks something with indexed mode. Plus we really don't
 //  need to allocate a Z buffer. Fix this. Make the config global.
 
-#ifdef INDEXEDMODE
+#if INDEXED == 1
 // setup for indexed pixels
 #define PIXELFLAG PIXEL8    // blitter flag corresponding to pixel depth
 #define PIXELSPERPHRASE 8  // how many pixels per 8-byte phrase
@@ -59,7 +58,7 @@ void setup_object_lists(void);
 #define S3ZOFFS ZOFFS1      // offset from screen 3 to the z buffer
 #define CLEAR_COLOR 0x27a027a0
 
-#endif //INDEXEDMODE
+#endif //INDEXED
 
 #define SCREENX     (14+(320-OBJWIDTH)/2)
 #define SCREENY     (20+(240-OBJHEIGHT))

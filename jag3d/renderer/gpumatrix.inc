@@ -7,17 +7,16 @@
 ;   return - return address
 ;
 
-    ; TODO: remove this once we're happy it's all working
-    .extern _test_returns
-    .extern _sincos_2048
+    .extern _sincos_2048    ; sine/cosine table with ROTSTEPS entries
     .gpu
 
 calc_matrix::
 
 ;   
-; This code will calculate the elements of the matrix and assign them
-; to the same registers as used by the original code (which unpacked
-; them from the structure calculated by the 68k).
+; This code will calculate the elements of the matrix from a Transform
+;   structure and assign them to the same registers as used by the 
+;   original code (which unpacked them from the Matrix structure calculated 
+;   on the 68k).
 ;
 
 xrite       .equr   r8,1        ; result registers for matrix multiply
@@ -48,10 +47,10 @@ gamma_sin   .equr   r6,1
 
     ; this version requires that the struct is long world aligned
 
-    ; mask for valid rotations -- 2047 << 2
-    movei   #$00001FFC,temp1
+    ; mask for valid rotations longword lookup
+    movei   #(ROTMASK << 2),temp1
 
-    ; load sin/cos table into base register for indexed loads
+    ; load sine/cosine table into base register for indexed loads
     movei   #_sincos_2048,yhead
 
     ;
@@ -65,7 +64,7 @@ gamma_sin   .equr   r6,1
     addqt   #4,temp0
     move    temp2,xposn
     shlq    #2,temp2            ; = alpha << 2
-    and     temp1,temp2         ; clamp 0-2047 (<< 2)
+    and     temp1,temp2         ; clamp 0-(ROTMASK << 2)
     shrq    #16,xposn
     load    (yhead+temp2),alpha_cos
 
@@ -73,7 +72,7 @@ gamma_sin   .equr   r6,1
     addqt   #4,temp0
     move    temp2,yposn
     shlq    #2,temp2            ; = beta << 2
-    and     temp1,temp2         ; clamp 0-2047 (<< 2)
+    and     temp1,temp2         ; clamp 0-(ROTMASK << 2)
     shrq    #16,yposn
     load    (yhead+temp2),zhead ; = beta_cos
 
@@ -81,13 +80,9 @@ gamma_sin   .equr   r6,1
         ; no add, stall
     move    temp2,zposn
     shlq    #2,temp2            ; = gamma << 2
-    and     temp1,temp2         ; clamp 0-2047 (<< 2)
+    and     temp1,temp2         ; clamp 0-(ROTMASK << 2)
     shrq    #16,zposn
     load    (yhead+temp2),yhead ; = gamma_cos
-
-    ;
-    ; end of loading test data
-    ;
 
     movei   #$0000FFFF,temp1 ; mask -- keep this in a reg somewhere?
 
@@ -261,46 +256,9 @@ gamma_sin   .equr   r6,1
     neg     zdown           
 
     ;
-    ; TEST: Put the values we've calculated into test_returns in
-    ; the order: xrite xdown xhead yrite ydown yhead zrite zdown zhead
-    ; so we can compare them against those calculated by the 68k
-    ;
-
-    ;movei   #_test_returns,temp0
-    ;storew  xrite,(temp0)
-    ;addqt   #2,temp0
-    ;storew  xdown,(temp0) 
-    ;addqt   #2,temp0
-    ;storew  xhead,(temp0) 
-    ;addqt   #2,temp0
-    ;storew  yrite,(temp0) 
-    ;addqt   #2,temp0
-    ;storew  ydown,(temp0) 
-    ;addqt   #2,temp0
-    ;storew  yhead,(temp0) 
-    ;addqt   #2,temp0
-    ;storew  zrite,(temp0) 
-    ;addqt   #2,temp0    
-    ;storew  zdown,(temp0) 
-    ;addqt   #2,temp0
-    ;storew  zhead,(temp0) 
-
-    ;
     ; We return with the 12 named matrix registers setup as if
     ; the matrix has just been read from external memory
     ;
 
     jump    (return)
     nop
-
-;
-; now kill the GPU
-;
-;    movei   #G_CTRL,r0
-;    moveq   #2,r1
-;.die:
-;    store   r1,(r0)
-;    nop
-;    nop
-;    jr  .die
-;    nop

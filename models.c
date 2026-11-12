@@ -21,7 +21,7 @@ extern Bitmap indexed_jaguar_logo;
 void setup_models() {
     short i, temp;
 
-#ifdef INDEXEDMODE
+#if INDEXED == 1
     // setup some basic colour indexes for testing indexed drawing
     unsigned short *palette = CLUT;
     palette[0] = 0x27a0;

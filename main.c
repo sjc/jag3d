@@ -94,8 +94,10 @@ main()
 	// clear the buffer used to overlay text
 	clear_hud_buffer();
 
+#if INDEXED == 0
 	// setup colours used in the HUD overlay
 	*(unsigned short int *)0xf00402 = 0x88ff; /* Color reg 1 = white */
+#endif
 
 	/* wait for video sync (paranoid code) */
 	VIDsync();

@@ -165,8 +165,7 @@ void demo_render_frame() {
     
 
 void demo_clear_buffer(Bitmap *buffer) {
-    // TODO: this needs to have access to INDEXEDMODE eg. from a shared config
-#ifdef INDEXEDMODE
+#if INDEXED == 1
         ClearScreenBuffer(buffer);
 #else
         ClearScreenAndZBuffer(buffer);

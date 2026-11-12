@@ -58,7 +58,7 @@ extern Material jaguar_logo_material_copy;
 extern N3DObjdata explosion_3d_sprite;
 extern Material explosion_0_material, explosion_1_material, explosion_2_material, explosion_3_material;
 
-#ifdef INDEXEDMODE
+#if INDEXED == 1
 extern Bitmap stacked_0, stacked_1, stacked_2, stacked_3;
 Material stacked_0_material = { 0, 0, &stacked_0 };
 Material stacked_1_material = { 0, 0, &stacked_1 };
@@ -69,7 +69,7 @@ Material stacked_3_material = { 0, 0, &stacked_3 };
 #define EXPLOSION_COUNT     4
 
 Material *explosion_material[EXPLOSION_COUNT] = {
-#ifdef INDEXEDMODE
+#if INDEXED == 1
     &stacked_0_material,
     &stacked_1_material,
     &stacked_2_material,

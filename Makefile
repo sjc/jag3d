@@ -59,12 +59,16 @@ JAG3D_OBJS = $(JAG3D)/jag3d.o $(JAG3D_LIB)/utils.o $(JAG3D_LIB)/sincos.o $(JAG3D
 	$(JAG3D_LIB)/rgb2cry.o $(JAG3D_LIB)/cry.o $(JAG3D_LIB)/3d_sprite_template.o $(JAG3D_REND)/renderer.o 
 
 #
-# Building the renderer requires additional parameters to find its .inc files
+# The GPU renderer
 #
-JAG3D_REND_INCS = $(wildcard $(JAG3D_REND)/*.inc)
-
-$(JAG3D_REND)/renderer.o: $(JAG3D_REND)/renderer.s $(JAG3D_REND_INCS)
+$(JAG3D_REND)/renderer.o: $(JAG3D_REND)/renderer.s
 	$(ASM) $(ASMFLAGS) -i$(JAG3D_REND) -i$(JAGSDK_INC) $<
+
+#
+# Build a .h from the Jag3D include file
+#
+$(JAG3D)/jag3dcfg.h: $(JAG3D)/jag3dcfg.inc
+	$(shell sed -r -n -f tools/inc2h.sed $< > $@)
 
 #
 # The model directories are those under $(DIR) which aren't files and aren't
@@ -91,7 +95,7 @@ FIXDATA = -ii $(FONTDIR)/clr6x12.jft _usefnt
 
 OBJS = $(CRT0) $(SRCOBJS) $(MODELS) $(LIBJAG) $(JAG3D_OBJS)
 
-jag3d.cof: $(OBJS)
+jag3d.cof: $(JAG3D)/jag3dcfg.h $(OBJS)
 	$(LINK) $(LINKFLAGS) -o $@ $(OBJS) $(FIXDATA)
 
 #
@@ -113,6 +117,6 @@ jag3d.j64: jag3d.rom
 
 j64: jag3d.j64
 
-GENERATED += jag3d.rom jag3d.j64
+GENERATED += $(JAG3D)/jag3dcfg.h jag3d.rom jag3d.j64
 
 include $(JAGSDK)/tools/build/jagrules.mk

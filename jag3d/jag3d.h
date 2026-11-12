@@ -5,6 +5,7 @@
 #ifndef JAG3D_H
 #define JAG3D_H
 
+#include "jag3dcfg.h"
 #include "n3d.h"
 #include "n3dintern.h"
 
@@ -48,23 +49,14 @@ short AngleAlongVector(short x, short y);
  */
 
 //
-// Number of discrete steps in a full rotation
-// This is used as the angle value in the Transform struct
-// If you need to change this:
-//  - The value should be a power of 2
-//  - You will need to update renderer/gpumatrix.inc
-//  - You will need to generate new tables to replace lib/sincos.s
-//  - You will also either need to replace the vector tables used in game logic, or
-//      take into acount the difference in ROTSTEP when indexing into them
-//  - You should take into account that AngleAlongVector() will still return a value
-//      in the range 0-2047
-// The `tables.py` tool can be used to generate the sine/cosine and vector tables.
+// Add or subtract rotation, clamping the value to the range 0 to ROTSTEPS-1
 //
-#define ROTSTEPS 2048
-#define ROTMASK  (ROTSTEPS-1)
 #define AddRotation(a,b)    ((a+b)&ROTMASK)
 #define SubRotation(a,b)    ((a-b)&ROTMASK)
 
+//
+// Some useful constants
+//
 #define ROT45DEG    (ROTSTEPS/8)
 #define ROT90DEG    (ROTSTEPS/4)
 #define ROT180DEG   (ROTSTEPS/2) 
