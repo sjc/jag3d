@@ -154,8 +154,6 @@ main()
 			reset_state();
 		}
 
-		if (process_input_cb) process_input_cb(buts, shotbuts);
-
 		/* calculate how many frames we have to process */
 		delta = (short)(vb_ticks - curvbtick);
 		updated = 0;
@@ -173,6 +171,11 @@ main()
 				//	 the game logic without re-rendering to allow it to catch up.
 				//
 				tick_counter();
+
+				if (process_input_cb) {
+					process_input_cb(buts, shotbuts);
+					shotbuts = 0; // if called again, no button has just been pressed
+				}
 
 				if (process_frame_cb) process_frame_cb();
 
