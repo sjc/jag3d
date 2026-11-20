@@ -104,7 +104,7 @@ POLYSIDES   =   4
 ; MAX_LIGHTS
 ; Maximum number of lights in a scene
 ;
-MAX_LIGHTS  =   6
+MAX_LIGHTS  =   4
 
 ;
 ; PERSP_SHIFT
@@ -187,6 +187,8 @@ ROTMASK = (ROTSTEPS-1)
 ; structs in n3d.h
 SIZEOF_N3DOBJECT = 28
 SIZEOF_TRANSFORM = 12
+SIZEOF_LIGHT = 8
+SIZEOF_LIGHTMODEL = (4 + (SIZEOF_LIGHT * MAX_LIGHTS))
 
 ; == sizeof(N3DObjdata)
 ;  + sizeof(Face)

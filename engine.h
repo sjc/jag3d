@@ -31,32 +31,8 @@ void setup_engine(void);
 
 extern Transform camtrans[];  // camera position and rotation
 
-// extern Lightmodel lightm;     // the scene lights
-// extern Lightmodel nolightm;
-
-Lightmodel lightm = {
-    0x4000,
-    1,
-    {
-      { -0x24f3, -0x24f3, -0x24f3, 0x4000 },
-      { 0, 0, 0, 0xC000 },
-      { 0x4000, 0, 0, 0x4000 },
-      { 0, 0x4000, 0, 0x4000 },
-      { 0, 0, 0x4000, 0x4000 },
-    }
-};
-
-Lightmodel nolightm = {
-    0x8000,
-    0,
-    {
-      { -0x24f3, -0x24f3, -0x24f3, 0x4000 },
-      { 0, 0, 0, 0xC000 },
-      { 0x4000, 0, 0, 0x4000 },
-      { 0, 0x4000, 0, 0x4000 },
-      { 0, 0, 0x4000, 0x4000 },
-    }
-};
+extern Lightmodel lightm;
+extern Lightmodel nolightm;
 
 TPoint *tpoints;            // pointer to scratch space for GPU point transforms
 

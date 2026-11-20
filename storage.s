@@ -25,6 +25,10 @@ _HUDBUFFER::    .ds.w   (320/4)*24 ; TODO: based off same CAMWIDTH
     .long
 _camtrans::     .ds.w   6   ; sizeof(Transform)
 
+    .long
+_lightm::       .ds.l   (SIZEOF_LIGHTMODEL/4)
+_nolightm::     .ds.l   (SIZEOF_LIGHTMODEL/4)
+
 ; variables used by counters.c
 _tock_size::        .ds.w   1
 _tock_size_x2::     .ds.w   1

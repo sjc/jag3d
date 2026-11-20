@@ -2,6 +2,8 @@
  * Data structures for new 3D renderer
  */
 
+#include "jag3dcfg.h"
+
 /*
  * a light can be of 1 of two types:
  * (1) an "in scene" light: this has attenuation based on distance to
@@ -26,12 +28,12 @@ typedef struct light {
  * the amount of GPU RAM available is the limiting factor.)
  */
 
-#define MAXLIGHTS 6
+// MAX_LIGHTS is defined in jag3dcfg.inc
 
 typedef struct lightmodel {
-	unsigned short	ambient;	/* ambient illumination */
-	short	numlights;		/* number of lights */
-	Light	lights[MAXLIGHTS];		/* pointer to lights */
+	unsigned short	ambient;		/* ambient illumination */
+	short	numlights;				/* number of lights */
+	Light	lights[MAX_LIGHTS];	/* array of Lights */
 } Lightmodel;
 
 /*
