@@ -59,7 +59,7 @@ main()
 	long *draw_olist;  		// the object list which will be shown next
 	long *clear_olist;  		// the object list associated with the buffer to clear
 
-	short delta, updated; 	// for the movement and rendering code
+	short delta, update; 	// for the movement and rendering code
 
 	long buts, shotbuts;		// joypad input
 
@@ -125,6 +125,7 @@ main()
 	reset_state();
 
 	curvbtick = vb_ticks;
+	update = 0;
 
 	/* loop forever */
 	while(1) {
@@ -132,16 +133,19 @@ main()
 		/* wait for the next vblank, if we haven't already missed it */
 		if (curvbtick == vb_ticks) VIDsync();
 
-		// 60hz = 16.66ms per frame
-		// 50hz = 20ms per frame
-
+		// timers for different parts of the game loop
 		idle_time = read_timer();
 		idle_time = idle_time - (render_time <= idle_time ? render_time : logic_time);
 		reset_timer();
 
-		/* calculate frames per second, etc. */
-		framespersecond = 300/(_timestamp - curframe);
-		curframe = _timestamp;
+		/* calculate frames per second, if we've just renderer a frame
+			NTSC = 60hz = 16.66ms per frame
+			PAL = 50hz = 20ms per frame
+ 		*/
+		if (update) {
+			framespersecond = 300/(_timestamp - curframe);
+			curframe = _timestamp;
+		}
 
 		/* buts will contain all buttons currently pressed */
 		/* shotbuts will contain the ones that are pressed now, but weren't
@@ -159,7 +163,7 @@ main()
 
 		/* calculate how many frames we have to process */
 		delta = (short)(vb_ticks - curvbtick);
-		updated = 0;
+		update = 0;
 
 		while (delta--) {
 
@@ -182,13 +186,13 @@ main()
 
 				if (process_frame_cb) process_frame_cb();
 
-				updated = 1; // we have something to render
+				update = 1; // we have something to render
 			}
 		}
 
 		logic_time = read_timer();
 
-		if (updated) {
+		if (update) {
 			/* setup the shared rendering state for this frame:
 				 - calculates the camera matrix
 			 	- clears the image- and z-buffer (if INITCLEARBUFFER is set)
