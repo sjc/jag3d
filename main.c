@@ -118,6 +118,9 @@ main()
 	/* load the renderer into GPU memory */
 	LoadAndInitRenderer();
 
+	// init the tweens code
+	tweens_onetime_init();
+
 	// setup the default scene
 	reset_state();
 

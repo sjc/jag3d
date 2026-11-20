@@ -155,6 +155,10 @@ The `RunPoints()` function is used to move particles and manage their lifetime. 
 
 - `tables.py` can generate tables of vectors to be used for movement. It can also generate new sine/cosine tables if you decide to re-define `ROTSTEPS`.
 
+## Example Engine Code
+
+The demo presented here uses a number of additional library functions which together make up a basic 'game engine'. You are free to use these in your project, or to ignore them completely. They are described in `ENGINE.md`.
+
 ## Updating from Atari 3D Demo
 
 - The `angles` struct has been renamed to `Transform`.
