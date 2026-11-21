@@ -112,7 +112,7 @@ jag3d.cof: $(JAG3D)/jag3dcfg.h const.h $(OBJS)
 
 BJL_BIN = ../new_bjl/bin
 
-jag3d.rom: $(OBJS)
+jag3d.rom: $(JAG3D)/jag3dcfg.h const.h $(OBJS)
 	$(LINK) $(LINKFLAGS) -n -a 802000 x 4000 -o $@ $(OBJS) $(FIXDATA)
 
 jag3d.j64: jag3d.rom
