@@ -40,13 +40,22 @@ void setup_models() {
     jaguar_logo_material_copy.tmap = jaguar_logo_material.tmap;
 #endif
 
+    // This is only required for the "Gouraud Shaded Textures" rendered (TEXSHADE = 2)
+#if TEXSHADE == 2
+    FixTexture(jaguar_logo_material.tmap);
+#endif
+
     /* find the maximum number of points in the models... */
     temp = 0;
     for (i = 0; i < MODEL_COUNT; i++) {
         // Check point count
         if (models[i].data->numpoints > temp) {
             temp = models[i].data->numpoints;
-        }
+        }        
+        // This is only required for the "Gouraud Shaded Textures" rendered (TEXSHADE = 2)
+#if TEXSHADE == 2
+        FixModelTextures(models[i].data);
+#endif
     }
 
     /* ...and allocate temporary storage for the GPU to transform points.

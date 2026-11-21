@@ -66,6 +66,12 @@ void setup_object_lists(void);
 #define SCREENY_PAL     (42*2)
 
 //
+// the values from above chosen at runtime by setup_object_lists()
+//
+extern short drawbuffer_x;
+extern short drawbuffer_y;
+
+//
 // The 3 screen buffers
 //
 extern short DISPBUF0[], DISPBUF1[], DISPBUF2[];
@@ -78,11 +84,7 @@ extern short DISPBUF0[], DISPBUF1[], DISPBUF2[];
 //
 extern short HUDBUFFER[];
 
-#define HUDWIDTH    (CAMWIDTH)
-#define HUDHEIGHT   (24)
-#define HUDDEPTH    (2)     // 4bpp
-
-#define HUDSTRIDE   (CAMWIDTH/2)   // @ 4bpp each pixel occupies half a byte
+#define HUDSTRIDE   (HUDWIDTH/2)   // @ 4bpp each pixel occupies half a byte
 
 void clear_hud_buffer(void);
 
@@ -148,11 +150,14 @@ long packed_olist1[24];
 long packed_olist2[24];
 long packed_olist3[24];
 
+//
+// set the absolute position of all buffers
+//
+extern void position_drawbuffers(short x, short y);
 
-/****************************************************************
- *  External functions                                          *
- ****************************************************************/
-
-extern void VIDsync(void);          /* waits for a vertical blank interrupt */
+//
+// set the position of all buffers compared to drawbuffer_x,drawbuffer_y
+//
+void set_drawbuffers_offset(short ox, short oy);
 
 #endif // SCREEN_H

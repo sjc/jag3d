@@ -19,7 +19,11 @@ _DISPBUF2::
 
 ; the overlay buffer
     .phrase
-_HUDBUFFER::    .ds.w   (320/4)*24 ; TODO: based off same CAMWIDTH
+_HUDBUFFER::    .ds.w   (HUDWIDTH/4)*HUDHEIGHT
+
+; default coordinates for the main buffer
+_drawbuffer_x:: .ds.w   1
+_drawbuffer_y:: .ds.w   1
 
 ; variables used by engine.c
     .long

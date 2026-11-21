@@ -7,6 +7,11 @@
 CAMWIDTH  = 320
 CAMHEIGHT = 224
 
+; HUD overlay
+HUDWIDTH  = CAMWIDTH
+HUDHEIGHT = 32
+HUDDEPTH  = 2       ; 4bpp
+
 ; number of entries in the tock_multiples array
 TOCKMCOUNT = 32
 

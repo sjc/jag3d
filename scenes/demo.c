@@ -1,10 +1,8 @@
 #include "demo.h"
+#include "align.h"
 #include "../engine.h"
 #include "../models.h"
-
-#include "../jag3d/jag3d.h"
 #include "../include/joypad.h"
-
 #include "../include/string.h"
 #include "../screen.h"
 
@@ -27,6 +25,14 @@ void write_paused() {
 }
 
 void demo_process_input(unsigned long down, unsigned long pressed) {
+
+    // scene switching
+    if (down & OPTION) {
+        if ((down & KEY_3) /*&& ((pressed & OPTION) || (pressed & KEY_3))*/) {
+            setup_align_scene();
+        }
+        return; // skip further processing if OPTION is held
+    }
 
     //
     // handle pausing
@@ -196,9 +202,6 @@ void setup_demo_scene() {
         objects[i].transform.xpos = models[i].initx;
         objects[i].transform.ypos = models[i].inity;
         objects[i].transform.zpos = models[i].initz;
-
-        // This is only required for the "Gouraud Shaded Textures" rendered (TEXSHADE = 2)
-        // FixModelTextures(models[i].data);
     }
 
     /* setup the logo 3d sprite */
@@ -210,9 +213,6 @@ void setup_demo_scene() {
     jaguar_logo_trans->beta = 1024;
     jaguar_logo_trans->gamma = 0;
 
-    // This is only required for the "Gouraud Shaded Textures" rendered (TEXSHADE = 2)
-    // FixTexture(jaguar_logo_material.tmap);
-
     /* setup the explosion 3D sprite -- not shown yet */
     Init3DSprite(&explosion_3d_sprite, &explosion_0_material, EXPLOSION_WIDTH, EXPLOSION_HEIGHT);
     explosion_trans->ypos = 0;
@@ -221,5 +221,6 @@ void setup_demo_scene() {
     explosion_frame = -1;
     explosion_frame_count = 0;
 
+    clear_hud_buffer();
     write_instructions();
 }

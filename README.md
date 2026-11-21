@@ -21,6 +21,7 @@ This is a modified version of Atari's 3D demo for the Jaguar. Specifically, it i
         - The assumption is that a project will choose one type of renderer to use
             - Support for multiple renders within one project is possible
     - Drawing code is unchanged, because I don't understand that stuff
+- Added some helper libraries and a demo which uses them
 
 ## Building
 
@@ -36,7 +37,9 @@ The demo will run with [the BigPEmu](https://www.richwhitehouse.com/jaguar/) emu
 
 This code has been tested on genuine Jaguar hardware and found to work just fine.
 
-Controls:
+The demo includes multiple example scenes which can be accessed with `OPTION` + a number key.
+
+Controls for the main demo scene (`OPTION` + `1`):
 
 - D-pad up/down: Move forward/back
 - D-pad left/right: Rotate
@@ -44,6 +47,12 @@ Controls:
 - 1/7: move up/down
 - 3/9: look up/down (rotate camera around x axis)
 - A: explosion
+
+Controls for the screen alignment scene (`OPTION` + `3`):
+
+- D-pad: Adjust the top left position of the draw buffer.
+
+If you find a better position for the screen than the defaults, you can update the constants in `screen.h` to make them permanent.
 
 ## Models
 

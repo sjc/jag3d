@@ -15,7 +15,7 @@
 
 #include "engine.h"
 #include "scenes/demo.h"
-#include "counters.h"
+#include "scenes/align.h"
 
 #include "models.h"
 
@@ -39,6 +39,8 @@ extern short font_ac[]; // font used for framerate
 //	 in response to the user pressing * and #
 //
 void reset_state() {
+	// reset offsets managed by align scene
+	reset_align_scene();
 	// init the main demo scene
 	setup_demo_scene();
 }

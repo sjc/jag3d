@@ -32,7 +32,7 @@ The game loop invokes a number of functions during at specific points, if those 
 
 #### Scenes
 
-The callbacks listed above can be used to group your game code into 'scenes'. The demo project contains an example of this, with the `scenes/` directory containing the implementation file. Each contains example callback functions, along with a `_setup()` function which is used to install the callback handlers.
+The callbacks listed above can be used to group your game code into 'scenes'. The demo project contains an example of this, with the `scenes/` directory containing the implementation files. Each contains example callback functions, along with a `_setup()` function which is used to install the callback handlers. You can swap between scenes with `OPTION` + `1` or `3`.
 
 ### Reset
 
