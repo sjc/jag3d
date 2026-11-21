@@ -15,8 +15,6 @@ short tick_current;
 // One-time timing setup
 //
 
-extern short VIDpal; // 1 == PAL, 0 == NTSC. set in video.s
-
 extern short vectors_100[];
 extern short vectors_120[];
 

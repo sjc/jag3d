@@ -15,7 +15,7 @@ _DISPBUF0::
 _DISPBUF1::
     .ds.w   4
 _DISPBUF2::
-    .ds.w   4*320*200 ; TODO: import a shared config and use CAMWIDTH and CAMHEIGHT
+    .ds.w   4*CAMWIDTH*CAMHEIGHT ; works with 16-bit CrY pixels
 
 ; the overlay buffer
     .phrase

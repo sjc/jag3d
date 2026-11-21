@@ -5,7 +5,7 @@
 
 ; camera width and height
 CAMWIDTH  = 320
-CAMHEIGHT = 200
+CAMHEIGHT = 224
 
 ; number of entries in the tock_multiples array
 TOCKMCOUNT = 32

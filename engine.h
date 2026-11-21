@@ -13,11 +13,13 @@
 #include "tweens.h"
 
 //
-// low-level functions
+// low-level video functions and variables
 //
 
 extern void VIDsync(void);          // waits for a vertical blank interrupt
 extern long vb_ticks;               // count of VBIs
+
+extern short VIDpal;                // 1 == PAL, 0 == NTSC. set in video.s
 
 //
 // one-time init

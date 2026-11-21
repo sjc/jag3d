@@ -57,8 +57,13 @@ void setup_object_lists(void);
 
 #endif //INDEXED
 
-#define SCREENX     (14+(320-OBJWIDTH)/2)
-#define SCREENY     (20+(240-OBJHEIGHT))
+//
+// screen positions determined experimentally
+//
+#define SCREENX_NTSC    (14)
+#define SCREENY_NTSC    (18*2)
+#define SCREENX_PAL     (12)
+#define SCREENY_PAL     (42*2)
 
 //
 // The 3 screen buffers
@@ -100,12 +105,15 @@ void clear_hud_buffer(void);
 }; \
 
 //
-// Object list definitions for the three screens
+// Object list definitions for the three screens, with NTSC and PAL variants
 // These will be 'compiled' to packed object lists by setup_object_lists()
 //
-OLIST(buf1_olist, SCREENX,SCREENY, DATA1)
-OLIST(buf2_olist, SCREENX,SCREENY, DATA2)
-OLIST(buf3_olist, SCREENX,SCREENY, DATA3)
+OLIST(buf1_olist_ntsc, SCREENX_NTSC,SCREENY_NTSC, DATA1)
+OLIST(buf2_olist_ntsc, SCREENX_NTSC,SCREENY_NTSC, DATA2)
+OLIST(buf3_olist_ntsc, SCREENX_NTSC,SCREENY_NTSC, DATA3)
+OLIST(buf1_olist_pal, SCREENX_PAL,SCREENY_PAL, DATA1)
+OLIST(buf2_olist_pal, SCREENX_PAL,SCREENY_PAL, DATA2)
+OLIST(buf3_olist_pal, SCREENX_PAL,SCREENY_PAL, DATA3)
 
 //
 // Bitmaps for the three screens
