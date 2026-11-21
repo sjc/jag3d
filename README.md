@@ -31,7 +31,7 @@ See BUILD.md for the available Makefile options.
 
 ## Running
 
-The 3D demo will not run on [Virtual Jaguar](https://icculus.org/virtualjaguar/). This is a known issue with all version of this code.
+The 3D demo will run on the updated Virtual Jaguar found [here](https://jaguar.provenance-emu.com/app.html).
 
 The demo will run with [the BigPEmu](https://www.richwhitehouse.com/jaguar/) emulator. This can be used along with the [Neosis](https://richwhitehouse.com/index.php?content=inc_projects.php&showproject=91) debugger.
 
